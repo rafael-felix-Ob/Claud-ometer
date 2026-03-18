@@ -42,11 +42,16 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can navigate to /active from the sidebar and see a card grid of active sessions
   2. Each card shows session duration, consumed tokens, project name and path, git branch, and Claude model in use
-  3. Clicking a card navigates to the full session detail at /sessions/[id]
+  3. Clicking a card expands in-place showing recent messages with a link to full session detail at /sessions/[id]
   4. Cards refresh every 5 seconds and display a last-updated timestamp
   5. Working-status cards display an animated pulse indicator; cards are ordered working first, waiting second, idle last
   6. When no sessions are active, an explicit empty state is shown; when using imported data mode, a banner explains live monitoring is unavailable
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — API route, SWR hook with 5s polling, sidebar navigation entry
+- [ ] 02-02-PLAN.md — /active page with card grid, stat row, status visuals, sort order, empty/imported states
+- [ ] 02-03-PLAN.md — In-place card expansion with session detail fetch + visual verification checkpoint
 
 ### Phase 3: GSD Integration
 **Goal**: Active session cards show current GSD build phase, status, and next action for sessions running inside GSD-managed projects
@@ -66,5 +71,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Detection Engine | 3/3 | Complete    | 2026-03-18 |
-| 2. Active Sessions Page | 0/TBD | Not started | - |
+| 2. Active Sessions Page | 0/3 | Not started | - |
 | 3. GSD Integration | 0/TBD | Not started | - |
