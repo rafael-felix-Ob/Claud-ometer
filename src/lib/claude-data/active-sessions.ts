@@ -446,7 +446,8 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
     const projectName = projectIdToName(projectId);
     const projectPath = projectIdToFullPath(projectId);
     const cwd = extractCwdFromSession(filePath) || '';
-    const gsdProgress = readGsdProgress(projectPath);
+    // Use cwd for GSD lookup — projectPath has hyphen-to-slash decoding issues
+    const gsdProgress = readGsdProgress(cwd || projectPath);
 
     // 4. Get git branch from tail-read messages (last message with gitBranch)
     let gitBranch = '';
