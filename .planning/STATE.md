@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-detection-engine/01-02-PLAN.md
-last_updated: "2026-03-18T15:18:11.105Z"
+stopped_at: Completed 01-detection-engine/01-03-PLAN.md
+last_updated: "2026-03-18T15:26:19.019Z"
 last_activity: 2026-03-18 — Roadmap created
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 33
 ---
 
@@ -52,6 +52,7 @@ Progress: [███░░░░░░░] 33%
 *Updated after each plan completion*
 | Phase 01-detection-engine P01 | 13 | 3 tasks | 4 files |
 | Phase 01-detection-engine P02 | 2 | 1 tasks | 2 files |
+| Phase 01-detection-engine P03 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ Recent decisions affecting current work:
 - [Phase 01-02]: Export getProjectsDir from reader.ts (was private) — required for scanActiveFiles directory discovery
 - [Phase 01-02]: hasIncompleteWrite only set on last non-empty line failure — interior malformed lines silently skipped
 - [Phase 01-02]: inferSessionStatus decision tree: age > IDLE_CUTOFF_MS checked first, then WORKING_SIGNAL_MS, then incomplete write, then message type
+- [Phase 01-detection-engine]: Export extractCwdFromSession, projectIdToName, projectIdToFullPath from reader.ts for orchestrator use
+- [Phase 01-detection-engine]: getActiveSessions is async because fullParseSession uses readline streaming to avoid blocking on large files
+- [Phase 01-detection-engine]: Token cache uses full-parse-once strategy: fullParseSession on first detection, tail-read updates on subsequent polls
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T15:18:11.074Z
-Stopped at: Completed 01-detection-engine/01-02-PLAN.md
+Last session: 2026-03-18T15:26:19.000Z
+Stopped at: Completed 01-detection-engine/01-03-PLAN.md
 Resume file: None

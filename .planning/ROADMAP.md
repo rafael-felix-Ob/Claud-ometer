@@ -12,7 +12,7 @@ This milestone adds a real-time /active page to the Claud-ometer dashboard. Phas
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Detection Engine** - Filesystem reader that infers active session status from JSONL tail-reads and mtime analysis
+- [x] **Phase 1: Detection Engine** - Filesystem reader that infers active session status from JSONL tail-reads and mtime analysis (completed 2026-03-18)
 - [ ] **Phase 2: Active Sessions Page** - API route, SWR hook, card grid UI, and all session display requirements
 - [ ] **Phase 3: GSD Integration** - Optional GSD build progress enrichment on cards for sessions with .planning/ directories
 
@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A session whose last JSONL message is an assistant turn without tool calls is classified as "waiting"
   4. A session with no file modification in the last 5 minutes is classified as "idle"
   5. A session with an incomplete (mid-write) final JSONL line is classified as "working" rather than erroring
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md — Test infrastructure (Jest + ts-jest) and type contracts (ActiveSessionInfo, SessionStatus)
@@ -65,6 +65,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Detection Engine | 2/3 | In Progress|  |
+| 1. Detection Engine | 3/3 | Complete   | 2026-03-18 |
 | 2. Active Sessions Page | 0/TBD | Not started | - |
 | 3. GSD Integration | 0/TBD | Not started | - |
