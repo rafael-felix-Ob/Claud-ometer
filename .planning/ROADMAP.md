@@ -28,7 +28,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A session whose last JSONL message is an assistant turn without tool calls is classified as "waiting"
   4. A session with no file modification in the last 5 minutes is classified as "idle"
   5. A session with an incomplete (mid-write) final JSONL line is classified as "working" rather than erroring
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Test infrastructure (Jest + ts-jest) and type contracts (ActiveSessionInfo, SessionStatus)
+- [ ] 01-02-PLAN.md — Core detection functions (tailReadJsonl, inferSessionStatus, scanActiveFiles) via TDD
+- [ ] 01-03-PLAN.md — getActiveSessions orchestrator with token cache, duration calculation, and cache eviction
 
 ### Phase 2: Active Sessions Page
 **Goal**: Users can navigate to /active and see all currently running Claude Code sessions with live-updating status, duration, tokens, and project context
@@ -60,6 +65,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Detection Engine | 0/TBD | Not started | - |
+| 1. Detection Engine | 0/3 | Planning complete | - |
 | 2. Active Sessions Page | 0/TBD | Not started | - |
 | 3. GSD Integration | 0/TBD | Not started | - |
