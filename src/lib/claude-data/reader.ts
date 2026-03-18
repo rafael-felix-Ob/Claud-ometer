@@ -37,7 +37,7 @@ function getClaudeDir(): string {
   return path.join(os.homedir(), '.claude');
 }
 
-function getProjectsDir(): string {
+export function getProjectsDir(): string {
   return path.join(getClaudeDir(), 'projects');
 }
 
