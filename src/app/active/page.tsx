@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { useActiveSessions } from '@/lib/hooks';
+import { useActiveSessions, useSessionDetail } from '@/lib/hooks';
 import { StatCard } from '@/components/cards/stat-card';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { formatTokens, formatCost, formatDuration, timeAgo } from '@/lib/format';
 import { getModelDisplayName, getModelColor } from '@/config/pricing';
-import { Activity, GitBranch, Zap, AlertTriangle, Layers } from 'lucide-react';
+import { Activity, GitBranch, Zap, AlertTriangle, Layers, ExternalLink } from 'lucide-react';
 import type { ActiveSessionInfo } from '@/lib/claude-data/types';
 
 const STATUS_ORDER: Record<string, number> = { working: 0, waiting: 1, idle: 2 };
@@ -40,6 +41,62 @@ function computeTotalTokens(s: ActiveSessionInfo): number {
 }
 
 const dataSourceFetcher = (url: string) => fetch(url).then(r => r.json());
+
+function ExpandedCardDetail({ sessionId }: { sessionId: string }) {
+  const { data: detail, isLoading } = useSessionDetail(sessionId);
+
+  if (isLoading || !detail) {
+    return (
+      <div className="pt-3">
+        <Separator className="mb-3" />
+        <div className="flex items-center justify-center py-4">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      </div>
+    );
+  }
+
+  // Get last 4 messages (user and assistant turns only)
+  const recentMessages = detail.messages
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .slice(-4);
+
+  return (
+    <div className="pt-3">
+      <Separator className="mb-3" />
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+        Recent messages
+      </p>
+      <div className="space-y-2">
+        {recentMessages.map((msg, i) => (
+          <div
+            key={i}
+            className={`rounded p-2 text-xs ${
+              msg.role === 'user'
+                ? 'bg-muted/50'
+                : ''
+            }`}
+          >
+            <span className="font-medium text-muted-foreground">
+              {msg.role === 'user' ? 'You' : 'Claude'}:
+            </span>{' '}
+            <span className="line-clamp-3">{msg.content}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end mt-3">
+        <Link
+          href={`/sessions/${sessionId}`}
+          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          View full session
+          <ExternalLink className="h-3 w-3" />
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export default function ActiveSessionsPage() {
   const { data: sessions, isLoading, error } = useActiveSessions();
@@ -173,6 +230,11 @@ export default function ActiveSessionsPage() {
                     </div>
                   )}
                 </CardContent>
+                {expandedId === session.id && (
+                  <CardContent className="pt-0">
+                    <ExpandedCardDetail sessionId={session.id} />
+                  </CardContent>
+                )}
               </Card>
             );
           })}
