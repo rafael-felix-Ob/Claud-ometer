@@ -74,7 +74,7 @@ Each task was committed atomically:
 2. **Task 2: Add ActiveSessionInfo and SessionStatus types** - `09e7007` (feat)
 3. **Task 3: Create test scaffolds for all DETECT-XX requirements** - `ad55e33` (test)
 
-**Plan metadata:** (pending final commit)
+**Plan metadata:** `8aa9f60` (docs: complete plan)
 
 ## Files Created/Modified
 - `jest.config.js` — Jest configuration with ts-jest preset, node environment, @/ path alias
