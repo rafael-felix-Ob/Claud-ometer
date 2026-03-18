@@ -72,34 +72,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DETECT-01 | — | Pending |
-| DETECT-02 | — | Pending |
-| DETECT-03 | — | Pending |
-| DETECT-04 | — | Pending |
-| DETECT-05 | — | Pending |
-| DETECT-06 | — | Pending |
-| DISP-01 | — | Pending |
-| DISP-02 | — | Pending |
-| DISP-03 | — | Pending |
-| DISP-04 | — | Pending |
-| DISP-05 | — | Pending |
-| DISP-06 | — | Pending |
-| GSD-01 | — | Pending |
-| GSD-02 | — | Pending |
-| GSD-03 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
-| UI-05 | — | Pending |
-| UI-06 | — | Pending |
-| UI-07 | — | Pending |
+| DETECT-01 | Phase 1 | Pending |
+| DETECT-02 | Phase 1 | Pending |
+| DETECT-03 | Phase 1 | Pending |
+| DETECT-04 | Phase 1 | Pending |
+| DETECT-05 | Phase 1 | Pending |
+| DETECT-06 | Phase 1 | Pending |
+| DISP-01 | Phase 2 | Pending |
+| DISP-02 | Phase 2 | Pending |
+| DISP-03 | Phase 2 | Pending |
+| DISP-04 | Phase 2 | Pending |
+| DISP-05 | Phase 2 | Pending |
+| DISP-06 | Phase 2 | Pending |
+| GSD-01 | Phase 3 | Pending |
+| GSD-02 | Phase 3 | Pending |
+| GSD-03 | Phase 3 | Pending |
+| UI-01 | Phase 2 | Pending |
+| UI-02 | Phase 2 | Pending |
+| UI-03 | Phase 2 | Pending |
+| UI-04 | Phase 2 | Pending |
+| UI-05 | Phase 2 | Pending |
+| UI-06 | Phase 2 | Pending |
+| UI-07 | Phase 2 | Pending |
 
 **Coverage:**
 - v1 requirements: 22 total
-- Mapped to phases: 0
-- Unmapped: 22 ⚠️
+- Mapped to phases: 22
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-18*
-*Last updated: 2026-03-18 after initial definition*
+*Last updated: 2026-03-18 after roadmap creation*
