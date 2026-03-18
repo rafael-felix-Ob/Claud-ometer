@@ -61,7 +61,7 @@ Plans:
   1. A session running in a GSD project shows the current phase name, phase status, and next action on its card
   2. A session running in a non-GSD project shows no GSD section on its card (no errors, no empty placeholders)
   3. GSD progress data updates with each 5-second poll alongside the session status
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — GsdProgress type + readGsdProgress pure function via TDD
@@ -76,4 +76,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Detection Engine | 3/3 | Complete    | 2026-03-18 |
 | 2. Active Sessions Page | 3/3 | Complete    | 2026-03-18 |
-| 3. GSD Integration | 0/2 | Not started | - |
+| 3. GSD Integration | 1/2 | In Progress|  |

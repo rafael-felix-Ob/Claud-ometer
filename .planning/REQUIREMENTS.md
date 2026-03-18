@@ -27,9 +27,9 @@ Requirements for the active sessions feature. Each maps to roadmap phases.
 
 ### GSD Progress
 
-- [ ] **GSD-01**: User can view current GSD phase name and status for sessions with .planning/ directories
-- [ ] **GSD-02**: User can view the next GSD action for each active GSD session
-- [ ] **GSD-03**: GSD progress gracefully shows nothing when .planning/ directory is absent
+- [x] **GSD-01**: User can view current GSD phase name and status for sessions with .planning/ directories
+- [x] **GSD-02**: User can view the next GSD action for each active GSD session
+- [x] **GSD-03**: GSD progress gracefully shows nothing when .planning/ directory is absent
 
 ### UI
 
@@ -84,9 +84,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISP-04 | Phase 2 | Complete |
 | DISP-05 | Phase 2 | Complete |
 | DISP-06 | Phase 2 | Complete |
-| GSD-01 | Phase 3 | Pending |
-| GSD-02 | Phase 3 | Pending |
-| GSD-03 | Phase 3 | Pending |
+| GSD-01 | Phase 3 | Complete |
+| GSD-02 | Phase 3 | Complete |
+| GSD-03 | Phase 3 | Complete |
 | UI-01 | Phase 2 | Complete |
 | UI-02 | Phase 2 | Complete |
 | UI-03 | Phase 2 | Complete |
