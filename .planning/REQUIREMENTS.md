@@ -23,7 +23,7 @@ Requirements for the active sessions feature. Each maps to roadmap phases.
 - [x] **DISP-03**: User can view project name and path for each active session
 - [x] **DISP-04**: User can view git branch for each active session
 - [x] **DISP-05**: User can view which Claude model each active session is using
-- [ ] **DISP-06**: User can click through to full session detail at /sessions/[id]
+- [x] **DISP-06**: User can click through to full session detail at /sessions/[id]
 
 ### GSD Progress
 
@@ -83,7 +83,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISP-03 | Phase 2 | Complete |
 | DISP-04 | Phase 2 | Complete |
 | DISP-05 | Phase 2 | Complete |
-| DISP-06 | Phase 2 | Pending |
+| DISP-06 | Phase 2 | Complete |
 | GSD-01 | Phase 3 | Pending |
 | GSD-02 | Phase 3 | Pending |
 | GSD-03 | Phase 3 | Pending |
@@ -102,4 +102,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-18*
-*Last updated: 2026-03-18 after roadmap creation*
+*Last updated: 2026-03-18 after 02-03 completion (DISP-06, UI-03 marked complete)*

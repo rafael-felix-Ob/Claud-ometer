@@ -13,7 +13,7 @@ This milestone adds a real-time /active page to the Claud-ometer dashboard. Phas
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Detection Engine** - Filesystem reader that infers active session status from JSONL tail-reads and mtime analysis (completed 2026-03-18)
-- [ ] **Phase 2: Active Sessions Page** - API route, SWR hook, card grid UI, and all session display requirements
+- [x] **Phase 2: Active Sessions Page** - API route, SWR hook, card grid UI, and all session display requirements (completed 2026-03-18)
 - [ ] **Phase 3: GSD Integration** - Optional GSD build progress enrichment on cards for sessions with .planning/ directories
 
 ## Phase Details
@@ -46,12 +46,12 @@ Plans:
   4. Cards refresh every 5 seconds and display a last-updated timestamp
   5. Working-status cards display an animated pulse indicator; cards are ordered working first, waiting second, idle last
   6. When no sessions are active, an explicit empty state is shown; when using imported data mode, a banner explains live monitoring is unavailable
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 02-01-PLAN.md — API route, SWR hook with 5s polling, sidebar navigation entry
-- [ ] 02-02-PLAN.md — /active page with card grid, stat row, status visuals, sort order, empty/imported states
-- [ ] 02-03-PLAN.md — In-place card expansion with session detail fetch + visual verification checkpoint
+- [x] 02-01-PLAN.md — API route, SWR hook with 5s polling, sidebar navigation entry
+- [x] 02-02-PLAN.md — /active page with card grid, stat row, status visuals, sort order, empty/imported states
+- [x] 02-03-PLAN.md — In-place card expansion with session detail fetch + visual verification checkpoint
 
 ### Phase 3: GSD Integration
 **Goal**: Active session cards show current GSD build phase, status, and next action for sessions running inside GSD-managed projects
@@ -71,5 +71,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Detection Engine | 3/3 | Complete    | 2026-03-18 |
-| 2. Active Sessions Page | 2/3 | In Progress|  |
+| 2. Active Sessions Page | 3/3 | Complete   | 2026-03-18 |
 | 3. GSD Integration | 0/TBD | Not started | - |
