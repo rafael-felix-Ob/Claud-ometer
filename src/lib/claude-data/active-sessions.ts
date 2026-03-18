@@ -19,6 +19,7 @@ import * as readline from 'readline';
 
 import { getProjectsDir, extractCwdFromSession, projectIdToName, projectIdToFullPath } from './reader';
 import { calculateCost } from '@/config/pricing';
+import { readGsdProgress } from './gsd-progress';
 import type { SessionMessage, SessionStatus, ActiveSessionInfo } from './types';
 
 // ---------------------------------------------------------------------------
@@ -445,6 +446,7 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
     const projectName = projectIdToName(projectId);
     const projectPath = projectIdToFullPath(projectId);
     const cwd = extractCwdFromSession(filePath) || '';
+    const gsdProgress = readGsdProgress(projectPath);
 
     // 4. Get git branch from tail-read messages (last message with gitBranch)
     let gitBranch = '';
@@ -475,6 +477,7 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
       model: cache.lastModel,
       models: Array.from(cache.models),
       lastActivity: new Date(mtimeMs).toISOString(),
+      gsdProgress,
     });
   }
 
