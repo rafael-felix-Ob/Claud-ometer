@@ -198,7 +198,14 @@ export default function ActiveSessionsPage() {
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold truncate mr-2">{session.projectName}</span>
+                    <div className="flex items-center gap-1.5 truncate min-w-0 mr-2">
+                      <span className="text-sm font-semibold truncate">{session.projectName}</span>
+                      {session.gsdProgress?.isGsd && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 font-mono">
+                          GSD
+                        </Badge>
+                      )}
+                    </div>
                     <Badge variant="secondary" className={`text-xs shrink-0 ${config.badge}`}>
                       <span className={`inline-block h-2 w-2 rounded-full mr-1.5 ${config.dot}`} />
                       {config.label}
@@ -231,6 +238,31 @@ export default function ActiveSessionsPage() {
                     </div>
                   )}
                 </CardContent>
+                {session.gsdProgress?.isGsd && session.gsdProgress.phaseName && (
+                  <CardContent className="pt-0">
+                    <Separator className="mb-2" />
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="truncate">
+                          Phase {session.gsdProgress.phaseNumber}: {session.gsdProgress.phaseName}
+                        </span>
+                        {session.gsdProgress.percent !== null && (
+                          <span className="shrink-0 font-mono text-[10px]">{session.gsdProgress.percent}%</span>
+                        )}
+                      </div>
+                      {session.gsdProgress.phaseStatus && (
+                        <div className="text-[10px] text-muted-foreground/70 truncate">
+                          {session.gsdProgress.phaseStatus}
+                        </div>
+                      )}
+                      {session.gsdProgress.nextAction && (
+                        <div className="font-mono text-[10px] text-primary/70 truncate">
+                          {session.gsdProgress.nextAction}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                )}
                 {expandedId === session.id && (
                   <CardContent className="pt-0">
                     <ExpandedCardDetail sessionId={session.id} />
