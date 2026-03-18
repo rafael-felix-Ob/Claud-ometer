@@ -49,7 +49,7 @@ Declared values (multiples of 4). Project uses Tailwind utility classes directly
 - CardContent top padding: `pt-0` — matches existing Card pattern in CLAUDE.md
 - Card grid gap: `gap-4` (16px) — locked in CONTEXT.md (`grid grid-cols-2 gap-4`)
 - Status dot size: 8px × 8px (`h-2 w-2`) — visually distinct without overwhelming
-- Dot-to-label gap: 6px (`gap-1.5`) — tight inline pairing
+- Dot-to-label gap: 8px (`gap-2`) — tight inline pairing
 
 **Exceptions:** Touch targets (sidebar nav links) remain at minimum 44px tall per accessibility guidelines. Sidebar nav link padding `px-3 py-2` achieves this.
 
@@ -61,13 +61,13 @@ Project uses Tailwind utility classes; no custom fontsize config in tailwind (Ta
 
 | Role | Size | Tailwind | Weight | Weight Class | Line Height | Usage |
 |------|------|----------|--------|--------------|-------------|-------|
-| Display | 20px | `text-xl` | Bold (700) | `font-bold` | 1.2 | Page title "Active Sessions (N)" |
+| Display | 20px | `text-xl` | Semibold (600) | `font-semibold` | 1.2 | Page title "Active Sessions (N)" |
 | Heading | 14px | `text-sm` | Semibold (600) | `font-semibold` | 1.2 | Card title (project name), card section labels |
 | Body | 14px | `text-sm` | Regular (400) | `font-normal` | 1.5 | Card body text, duration, token/cost display, message preview text |
 | Label | 12px | `text-xs` | Medium (500) | `font-medium` | 1.4 | Stat labels, "last activity" timestamp, page subtitle, badge labels |
 | Tiny | 10px | `text-[10px]` | Regular (400) | `font-normal` | 1.3 | Secondary metadata (path truncation, sidebar footer) |
 
-**Weights in use: 2** — Regular (400) for body/tiny, Semibold (600) for headings. Bold (700) used only for the page title display role.
+**Weights in use: 2** — Regular (400) for body/tiny, Semibold (600) for display/headings.
 
 **Monospace usage:** Git branch name uses `font-mono` at 12px (`text-xs font-mono`) — locked in CONTEXT.md.
 
@@ -118,7 +118,7 @@ The project uses CSS variables with a dark-default theme. Colors below are the d
 ```
 /active page (full width minus 60px sidebar)
 ├── Page header (mb-6)
-│   ├── Title: "Active Sessions (N)"   text-xl font-bold tracking-tight
+│   ├── Title: "Active Sessions (N)"   text-xl font-semibold tracking-tight
 │   └── Subtitle: "Updated Xs ago"     text-sm text-muted-foreground
 ├── Imported data banner (if applicable, mb-4)
 │   └── Amber warning bar              full width, p-3, rounded-lg
@@ -135,7 +135,7 @@ The project uses CSS variables with a dark-default theme. Colors below are the d
 Card (border-l-4, rounded-xl, border-border/50, shadow-sm, cursor-pointer)
 ├── CardHeader pb-3
 │   ├── Row 1: Project name (text-sm font-semibold truncate) + Status badge (right)
-│   └── Row 2: Duration prominent (text-xl font-bold) + "last activity" (text-xs text-muted-foreground)
+│   └── Row 2: Duration prominent (text-xl font-semibold) + "last activity" (text-xs text-muted-foreground)
 ├── CardContent pt-0
 │   ├── Token/cost row: "1.2M tokens • $4.32"   text-sm text-muted-foreground
 │   ├── Model badge row: colored badge           text-xs, inline style color
