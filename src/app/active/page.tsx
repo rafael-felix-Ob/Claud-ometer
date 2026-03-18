@@ -190,12 +190,13 @@ export default function ActiveSessionsPage() {
             const config = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.idle;
             const totalTokens = computeTotalTokens(session);
             return (
-              <Card
+              <div
                 key={session.id}
-                className="shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01] gap-3"
-                style={{ borderColor: 'color-mix(in oklab, var(--border) 50%, transparent)', borderLeftWidth: '4px', borderLeftColor: config.borderColor }}
+                className="rounded-xl border border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01]"
+                style={{ borderLeftWidth: '4px', borderLeftColor: config.borderColor }}
                 onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
               >
+              <Card className="border-0 shadow-none gap-3">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 truncate min-w-0 mr-2">
@@ -269,6 +270,7 @@ export default function ActiveSessionsPage() {
                   </CardContent>
                 )}
               </Card>
+              </div>
             );
           })}
         </div>

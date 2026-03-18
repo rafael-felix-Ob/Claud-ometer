@@ -443,10 +443,10 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
     }
 
     // 3. Resolve project metadata using existing helpers
-    // Prefer cwd basename for project name — projectIdToName decodes hyphens as path separators
-    const projectName = cwd ? path.basename(cwd) : projectIdToName(projectId);
     const projectPath = projectIdToFullPath(projectId);
     const cwd = extractCwdFromSession(filePath) || '';
+    // Prefer cwd basename for project name — projectIdToName decodes hyphens as path separators
+    const projectName = cwd ? path.basename(cwd) : projectIdToName(projectId);
     // Use cwd for GSD lookup — projectPath has hyphen-to-slash decoding issues
     const gsdProgress = readGsdProgress(cwd || projectPath);
 
