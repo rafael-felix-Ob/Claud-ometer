@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-18T20:08:57.096Z"
+stopped_at: Checkpoint 03-02-PLAN.md Task 3 (human-verify)
+last_updated: "2026-03-18T20:15:22.683Z"
 last_activity: 2026-03-18 — Completed 02-03 (card expansion, visual verification approved)
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 50
 ---
 
@@ -59,6 +59,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-active-sessions-page P02 | 5 | 1 tasks | 1 files |
 | Phase 02-active-sessions-page P03 | 15 | 2 tasks | 1 files |
 | Phase 03-gsd-integration P01 | 3 | 1 tasks | 3 files |
+| Phase 03-gsd-integration P02 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,8 @@ Recent decisions affecting current work:
 - [Phase 03-gsd-integration]: Phase status extracted from prose 'Status:' line (not frontmatter status field) — frontmatter status is milestone-level, not phase-level
 - [Phase 03-gsd-integration]: GSD_UNREADABLE constant with isGsd:true + all nulls used for Tier 2 (broken GSD) response shape
 - [Phase 03-gsd-integration]: jest.mock('fs') for readGsdProgress unit tests — enables deterministic fixture control without real filesystem reads
+- [Phase 03-gsd-integration]: GSD badge placed in flex container wrapping project name to keep name+badge together and truncate correctly
+- [Phase 03-gsd-integration]: GSD progress section added as separate CardContent block to preserve existing card layout and opacity logic
 
 ### Pending Todos
 
@@ -99,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:08:57.054Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-18T20:15:22.649Z
+Stopped at: Checkpoint 03-02-PLAN.md Task 3 (human-verify)
 Resume file: None

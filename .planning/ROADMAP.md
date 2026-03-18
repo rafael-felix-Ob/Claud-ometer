@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Detection Engine** - Filesystem reader that infers active session status from JSONL tail-reads and mtime analysis (completed 2026-03-18)
 - [x] **Phase 2: Active Sessions Page** - API route, SWR hook, card grid UI, and all session display requirements (completed 2026-03-18)
-- [ ] **Phase 3: GSD Integration** - Optional GSD build progress enrichment on cards for sessions with .planning/ directories
+- [x] **Phase 3: GSD Integration** - Optional GSD build progress enrichment on cards for sessions with .planning/ directories (completed 2026-03-18)
 
 ## Phase Details
 
@@ -61,7 +61,7 @@ Plans:
   1. A session running in a GSD project shows the current phase name, phase status, and next action on its card
   2. A session running in a non-GSD project shows no GSD section on its card (no errors, no empty placeholders)
   3. GSD progress data updates with each 5-second poll alongside the session status
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — GsdProgress type + readGsdProgress pure function via TDD
@@ -76,4 +76,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Detection Engine | 3/3 | Complete    | 2026-03-18 |
 | 2. Active Sessions Page | 3/3 | Complete    | 2026-03-18 |
-| 3. GSD Integration | 1/2 | In Progress|  |
+| 3. GSD Integration | 2/2 | Complete   | 2026-03-18 |
