@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import useSWR from 'swr';
 import {
   LayoutDashboard,
+  Activity,
   FolderKanban,
   MessageSquare,
   DollarSign,
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/active', label: 'Active', icon: Activity },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/sessions', label: 'Sessions', icon: MessageSquare },
   { href: '/costs', label: 'Costs', icon: DollarSign },
