@@ -18,19 +18,19 @@ const STATUS_ORDER: Record<string, number> = { working: 0, waiting: 1, idle: 2 }
 const STATUS_CONFIG = {
   working: {
     dot: 'bg-green-500 animate-pulse',
-    border: 'border-l-green-500',
+    borderColor: '#22c55e', // green-500 — inline style to survive Tailwind v4 JIT purge
     badge: 'bg-green-500/10 text-green-600 border border-green-500/30',
     label: 'Working',
   },
   waiting: {
     dot: 'bg-amber-500',
-    border: 'border-l-amber-500',
+    borderColor: '#f59e0b', // amber-500
     badge: 'bg-amber-500/10 text-amber-600 border border-amber-500/30',
     label: 'Waiting',
   },
   idle: {
     dot: 'bg-muted-foreground/40',
-    border: 'border-l-border',
+    borderColor: 'hsl(var(--border))', // matches border token
     badge: 'bg-secondary text-muted-foreground',
     label: 'Idle',
   },
@@ -192,7 +192,8 @@ export default function ActiveSessionsPage() {
             return (
               <Card
                 key={session.id}
-                className={`border-l-4 ${config.border} border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01] gap-3`}
+                className="shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01] gap-3"
+                style={{ borderColor: 'hsl(var(--border) / 0.5)', borderLeftWidth: '4px', borderLeftColor: config.borderColor }}
                 onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
               >
                 <CardHeader className="pb-3">
