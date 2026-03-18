@@ -18,11 +18,11 @@ Requirements for the active sessions feature. Each maps to roadmap phases.
 
 ### Display
 
-- [ ] **DISP-01**: User can view active session duration (time since session started)
-- [ ] **DISP-02**: User can view consumed tokens per active session
-- [ ] **DISP-03**: User can view project name and path for each active session
-- [ ] **DISP-04**: User can view git branch for each active session
-- [ ] **DISP-05**: User can view which Claude model each active session is using
+- [x] **DISP-01**: User can view active session duration (time since session started)
+- [x] **DISP-02**: User can view consumed tokens per active session
+- [x] **DISP-03**: User can view project name and path for each active session
+- [x] **DISP-04**: User can view git branch for each active session
+- [x] **DISP-05**: User can view which Claude model each active session is using
 - [ ] **DISP-06**: User can click through to full session detail at /sessions/[id]
 
 ### GSD Progress
@@ -33,13 +33,13 @@ Requirements for the active sessions feature. Each maps to roadmap phases.
 
 ### UI
 
-- [ ] **UI-01**: Dedicated /active page with card grid layout
+- [x] **UI-01**: Dedicated /active page with card grid layout
 - [x] **UI-02**: Sidebar navigation entry with Activity icon
 - [x] **UI-03**: Cards auto-refresh every 5 seconds with last-updated indicator
-- [ ] **UI-04**: Animated pulse indicator on "working" status sessions
-- [ ] **UI-05**: Cards ordered by status: working first, waiting second, idle last
-- [ ] **UI-06**: Empty state displayed when no active sessions detected
-- [ ] **UI-07**: Banner displayed when using imported data mode (live monitoring unavailable)
+- [x] **UI-04**: Animated pulse indicator on "working" status sessions
+- [x] **UI-05**: Cards ordered by status: working first, waiting second, idle last
+- [x] **UI-06**: Empty state displayed when no active sessions detected
+- [x] **UI-07**: Banner displayed when using imported data mode (live monitoring unavailable)
 
 ## v2 Requirements
 
@@ -78,22 +78,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DETECT-04 | Phase 1 | Complete |
 | DETECT-05 | Phase 1 | Complete |
 | DETECT-06 | Phase 1 | Complete |
-| DISP-01 | Phase 2 | Pending |
-| DISP-02 | Phase 2 | Pending |
-| DISP-03 | Phase 2 | Pending |
-| DISP-04 | Phase 2 | Pending |
-| DISP-05 | Phase 2 | Pending |
+| DISP-01 | Phase 2 | Complete |
+| DISP-02 | Phase 2 | Complete |
+| DISP-03 | Phase 2 | Complete |
+| DISP-04 | Phase 2 | Complete |
+| DISP-05 | Phase 2 | Complete |
 | DISP-06 | Phase 2 | Pending |
 | GSD-01 | Phase 3 | Pending |
 | GSD-02 | Phase 3 | Pending |
 | GSD-03 | Phase 3 | Pending |
-| UI-01 | Phase 2 | Pending |
+| UI-01 | Phase 2 | Complete |
 | UI-02 | Phase 2 | Complete |
 | UI-03 | Phase 2 | Complete |
-| UI-04 | Phase 2 | Pending |
-| UI-05 | Phase 2 | Pending |
-| UI-06 | Phase 2 | Pending |
-| UI-07 | Phase 2 | Pending |
+| UI-04 | Phase 2 | Complete |
+| UI-05 | Phase 2 | Complete |
+| UI-06 | Phase 2 | Complete |
+| UI-07 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 22 total

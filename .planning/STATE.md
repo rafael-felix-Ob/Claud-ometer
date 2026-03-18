@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-18T17:24:59.737Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-18T17:32:11.792Z"
 last_activity: 2026-03-18 — Roadmap created
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 33
 ---
 
@@ -54,6 +54,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01-detection-engine P02 | 2 | 1 tasks | 2 files |
 | Phase 01-detection-engine P03 | 5 | 2 tasks | 3 files |
 | Phase 02-active-sessions-page P01 | 3 | 3 tasks | 3 files |
+| Phase 02-active-sessions-page P02 | 5 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 01-detection-engine]: getActiveSessions is async because fullParseSession uses readline streaming to avoid blocking on large files
 - [Phase 01-detection-engine]: Token cache uses full-parse-once strategy: fullParseSession on first detection, tail-read updates on subsequent polls
 - [Phase 02-01]: Return [] immediately in imported mode for active sessions — active detection only applies to live ~/.claude/ reads
+- [Phase 02-active-sessions-page]: Use inline style={{ color: getModelColor(model) }} for model badge color — avoids Tailwind v4 JIT purge of runtime-constructed color classes
+- [Phase 02-active-sessions-page]: STATUS_CONFIG object indexed by status string centralizes dot/border/badge CSS — one change point for all status visual treatment
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T17:24:59.692Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-18T17:32:11.763Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
