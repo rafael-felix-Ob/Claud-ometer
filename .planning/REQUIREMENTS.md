@@ -9,12 +9,12 @@ Requirements for the active sessions feature. Each maps to roadmap phases.
 
 ### Detection
 
-- [ ] **DETECT-01**: System detects active sessions by scanning JSONL files modified within the last 10 minutes
-- [ ] **DETECT-02**: System infers session status as "working" when last message is assistant with tool calls or file was modified within last 10 seconds
-- [ ] **DETECT-03**: System infers session status as "waiting" when last message is assistant text without pending tool calls
-- [ ] **DETECT-04**: System infers session status as "idle" when no file modification in the last 5 minutes but session was recently active
-- [ ] **DETECT-05**: System uses tail-read (last 16KB) of JSONL files instead of full re-parse for performance
-- [ ] **DETECT-06**: System treats incomplete last-line parse as "working" (write in progress)
+- [x] **DETECT-01**: System detects active sessions by scanning JSONL files modified within the last 10 minutes
+- [x] **DETECT-02**: System infers session status as "working" when last message is assistant with tool calls or file was modified within last 10 seconds
+- [x] **DETECT-03**: System infers session status as "waiting" when last message is assistant text without pending tool calls
+- [x] **DETECT-04**: System infers session status as "idle" when no file modification in the last 5 minutes but session was recently active
+- [x] **DETECT-05**: System uses tail-read (last 16KB) of JSONL files instead of full re-parse for performance
+- [x] **DETECT-06**: System treats incomplete last-line parse as "working" (write in progress)
 
 ### Display
 
@@ -72,12 +72,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DETECT-01 | Phase 1 | Pending |
-| DETECT-02 | Phase 1 | Pending |
-| DETECT-03 | Phase 1 | Pending |
-| DETECT-04 | Phase 1 | Pending |
-| DETECT-05 | Phase 1 | Pending |
-| DETECT-06 | Phase 1 | Pending |
+| DETECT-01 | Phase 1 | Complete |
+| DETECT-02 | Phase 1 | Complete |
+| DETECT-03 | Phase 1 | Complete |
+| DETECT-04 | Phase 1 | Complete |
+| DETECT-05 | Phase 1 | Complete |
+| DETECT-06 | Phase 1 | Complete |
 | DISP-01 | Phase 2 | Pending |
 | DISP-02 | Phase 2 | Pending |
 | DISP-03 | Phase 2 | Pending |
