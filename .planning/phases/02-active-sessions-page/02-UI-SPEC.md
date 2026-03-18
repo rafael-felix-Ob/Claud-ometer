@@ -64,10 +64,10 @@ Project uses Tailwind utility classes; no custom fontsize config in tailwind (Ta
 | Display | 20px | `text-xl` | Semibold (600) | `font-semibold` | 1.2 | Page title "Active Sessions (N)" |
 | Heading | 14px | `text-sm` | Semibold (600) | `font-semibold` | 1.2 | Card title (project name), card section labels |
 | Body | 14px | `text-sm` | Regular (400) | `font-normal` | 1.5 | Card body text, duration, token/cost display, message preview text |
-| Label | 12px | `text-xs` | Medium (500) | `font-medium` | 1.4 | Stat labels, "last activity" timestamp, page subtitle, badge labels |
+| Label | 12px | `text-xs` | Regular (400) | `font-normal` | 1.4 | Stat labels, "last activity" timestamp, page subtitle, badge labels |
 | Tiny | 10px | `text-[10px]` | Regular (400) | `font-normal` | 1.3 | Secondary metadata (path truncation, sidebar footer) |
 
-**Weights in use: 2** — Regular (400) for body/tiny, Semibold (600) for display/headings.
+**Weights in use: 2** — Regular (400) for body/label/tiny, Semibold (600) for display/headings.
 
 **Monospace usage:** Git branch name uses `font-mono` at 12px (`text-xs font-mono`) — locked in CONTEXT.md.
 
