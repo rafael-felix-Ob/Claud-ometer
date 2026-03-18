@@ -34,8 +34,8 @@ Requirements for the active sessions feature. Each maps to roadmap phases.
 ### UI
 
 - [ ] **UI-01**: Dedicated /active page with card grid layout
-- [ ] **UI-02**: Sidebar navigation entry with Activity icon
-- [ ] **UI-03**: Cards auto-refresh every 5 seconds with last-updated indicator
+- [x] **UI-02**: Sidebar navigation entry with Activity icon
+- [x] **UI-03**: Cards auto-refresh every 5 seconds with last-updated indicator
 - [ ] **UI-04**: Animated pulse indicator on "working" status sessions
 - [ ] **UI-05**: Cards ordered by status: working first, waiting second, idle last
 - [ ] **UI-06**: Empty state displayed when no active sessions detected
@@ -88,8 +88,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GSD-02 | Phase 3 | Pending |
 | GSD-03 | Phase 3 | Pending |
 | UI-01 | Phase 2 | Pending |
-| UI-02 | Phase 2 | Pending |
-| UI-03 | Phase 2 | Pending |
+| UI-02 | Phase 2 | Complete |
+| UI-03 | Phase 2 | Complete |
 | UI-04 | Phase 2 | Pending |
 | UI-05 | Phase 2 | Pending |
 | UI-06 | Phase 2 | Pending |

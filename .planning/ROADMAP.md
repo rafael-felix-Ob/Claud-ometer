@@ -46,7 +46,7 @@ Plans:
   4. Cards refresh every 5 seconds and display a last-updated timestamp
   5. Working-status cards display an animated pulse indicator; cards are ordered working first, waiting second, idle last
   6. When no sessions are active, an explicit empty state is shown; when using imported data mode, a banner explains live monitoring is unavailable
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 02-01-PLAN.md — API route, SWR hook with 5s polling, sidebar navigation entry
@@ -71,5 +71,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Detection Engine | 3/3 | Complete    | 2026-03-18 |
-| 2. Active Sessions Page | 0/3 | Not started | - |
+| 2. Active Sessions Page | 1/3 | In Progress|  |
 | 3. GSD Integration | 0/TBD | Not started | - |
