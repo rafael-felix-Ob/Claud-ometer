@@ -9,7 +9,7 @@ Requirements for the active sessions feature. Each maps to roadmap phases.
 
 ### Detection
 
-- [x] **DETECT-01**: System detects active sessions by scanning JSONL files modified within the last 10 minutes
+- [x] **DETECT-01**: System detects active sessions by scanning JSONL files modified within the last 30 minutes (configurable via ACTIVE_WINDOW_MS)
 - [x] **DETECT-02**: System infers session status as "working" when last message is assistant with tool calls or file was modified within last 10 seconds
 - [x] **DETECT-03**: System infers session status as "waiting" when last message is assistant text without pending tool calls
 - [x] **DETECT-04**: System infers session status as "idle" when no file modification in the last 5 minutes but session was recently active

@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Nothing (first phase)
 **Requirements**: DETECT-01, DETECT-02, DETECT-03, DETECT-04, DETECT-05, DETECT-06
 **Success Criteria** (what must be TRUE):
-  1. Given JSONL files in ~/.claude/, the system returns only sessions with files modified within the last 10 minutes
+  1. Given JSONL files in ~/.claude/, the system returns only sessions with files modified within the last 30 minutes (configurable via ACTIVE_WINDOW_MS)
   2. A session whose last JSONL message is an assistant turn with tool calls is classified as "working"
   3. A session whose last JSONL message is an assistant turn without tool calls is classified as "waiting"
   4. A session with no file modification in the last 5 minutes is classified as "idle"
