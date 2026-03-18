@@ -172,3 +172,24 @@ export interface DashboardStats {
   projectCount: number;
   recentSessions: SessionInfo[];
 }
+
+export type SessionStatus = 'working' | 'waiting' | 'idle';
+
+export interface ActiveSessionInfo {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectPath: string;
+  cwd: string;
+  gitBranch: string;
+  status: SessionStatus;
+  duration: number;           // ms — current contiguous activity block
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheReadTokens: number;
+  totalCacheWriteTokens: number;
+  estimatedCost: number;
+  model: string;              // last used model
+  models: string[];           // all models used in session
+  lastActivity: string;       // ISO timestamp — file mtime
+}
