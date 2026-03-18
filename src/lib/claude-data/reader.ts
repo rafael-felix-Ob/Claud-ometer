@@ -56,17 +56,17 @@ export function getHistory(): HistoryEntry[] {
   }).filter(Boolean) as HistoryEntry[];
 }
 
-function projectIdToName(id: string): string {
+export function projectIdToName(id: string): string {
   const decoded = id.replace(/^-/, '/').replace(/-/g, '/');
   const parts = decoded.split('/');
   return parts[parts.length - 1] || id;
 }
 
-function projectIdToFullPath(id: string): string {
+export function projectIdToFullPath(id: string): string {
   return id.replace(/^-/, '/').replace(/-/g, '/');
 }
 
-function extractCwdFromSession(filePath: string): string | null {
+export function extractCwdFromSession(filePath: string): string | null {
   try {
     const fd = fs.openSync(filePath, 'r');
     const buffer = Buffer.alloc(8192); // Read first 8KB, enough for first few lines
