@@ -192,4 +192,16 @@ export interface ActiveSessionInfo {
   model: string;              // last used model
   models: string[];           // all models used in session
   lastActivity: string;       // ISO timestamp — file mtime
+  gsdProgress?: GsdProgress | null;
+}
+
+export interface GsdProgress {
+  isGsd: true;
+  phaseName: string | null;
+  phaseNumber: number | null;
+  phaseStatus: string | null;
+  nextAction: string | null;
+  totalPhases: number | null;
+  completedPhases: number | null;
+  percent: number | null;
 }
