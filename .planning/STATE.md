@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-detection-engine/01-01-PLAN.md
-last_updated: "2026-03-18T15:12:23.945Z"
+stopped_at: Completed 01-detection-engine/01-02-PLAN.md
+last_updated: "2026-03-18T15:18:11.105Z"
 last_activity: 2026-03-18 — Roadmap created
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 33
 ---
 
@@ -51,6 +51,7 @@ Progress: [███░░░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 01-detection-engine P01 | 13 | 3 tasks | 4 files |
+| Phase 01-detection-engine P02 | 2 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ Recent decisions affecting current work:
 - [Pre-Phase 1]: GSD progress display deferred to Phase 3 — validate base detection reliability before adding derived features
 - [Phase 01-01]: Use jest testEnvironment: node (not jsdom) — Phase 1 is pure Node.js filesystem unit tests
 - [Phase 01-01]: Test file imports from non-existent active-sessions module to establish RED state — defines behavioral contract for Plan 02 TDD implementation
+- [Phase 01-02]: Export getProjectsDir from reader.ts (was private) — required for scanActiveFiles directory discovery
+- [Phase 01-02]: hasIncompleteWrite only set on last non-empty line failure — interior malformed lines silently skipped
+- [Phase 01-02]: inferSessionStatus decision tree: age > IDLE_CUTOFF_MS checked first, then WORKING_SIGNAL_MS, then incomplete write, then message type
 
 ### Pending Todos
 
@@ -76,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T15:12:23.842Z
-Stopped at: Completed 01-detection-engine/01-01-PLAN.md
+Last session: 2026-03-18T15:18:11.074Z
+Stopped at: Completed 01-detection-engine/01-02-PLAN.md
 Resume file: None
