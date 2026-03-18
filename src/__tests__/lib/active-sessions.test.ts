@@ -14,9 +14,17 @@ import {
   inferSessionStatus,
   tailReadJsonl,
   ACTIVE_SESSION_CONFIG,
+  getActiveSessions,
 } from '@/lib/claude-data/active-sessions';
 
 import { SessionMessage } from '@/lib/claude-data/types';
+
+jest.mock('@/lib/claude-data/reader', () => ({
+  getProjectsDir: jest.fn(() => '/tmp/mock-claude-projects'),
+  extractCwdFromSession: jest.fn(() => '/home/user/project'),
+  projectIdToName: jest.fn((id: string) => `Project ${id}`),
+  projectIdToFullPath: jest.fn((id: string) => `/home/user/${id}`),
+}));
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -299,5 +307,185 @@ describe('tailReadJsonl', () => {
       expect(hasIncompleteWrite).toBe(false);
       expect(messages.length).toBe(2);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getActiveSessions — orchestrator integration tests
+// ---------------------------------------------------------------------------
+
+// Import the mocked reader module to control getProjectsDir in tests
+import { getProjectsDir } from '@/lib/claude-data/reader';
+
+describe('getActiveSessions', () => {
+  let orchestratorTmpDir: string;
+
+  beforeEach(() => {
+    orchestratorTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claud-orchestrator-'));
+    // Point getProjectsDir mock to our temp directory
+    (getProjectsDir as jest.Mock).mockReturnValue(orchestratorTmpDir);
+  });
+
+  afterEach(() => {
+    fs.rmSync(orchestratorTmpDir, { recursive: true, force: true });
+    jest.clearAllMocks();
+  });
+
+  test('returns empty array when no active files exist', async () => {
+    // Empty projects dir — no session files
+    const result = await getActiveSessions();
+    expect(result).toEqual([]);
+  });
+
+  test('returns session with correct status from recently modified file', async () => {
+    // Create project dir + JSONL file
+    const projectId = 'my-project';
+    const projectDir = path.join(orchestratorTmpDir, projectId);
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    const sessionId = 'session-abc123';
+    const filePath = path.join(projectDir, `${sessionId}.jsonl`);
+
+    const userMsg = makeMessage({ type: 'user', uuid: 'u1' });
+    const assistantMsg = makeMessage({
+      type: 'assistant',
+      uuid: 'a1',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'tool_use', id: 'tool1', name: 'Bash', input: {} }],
+        model: 'claude-sonnet-4-6',
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+      },
+    });
+
+    fs.writeFileSync(filePath, [userMsg, assistantMsg].map(l => JSON.stringify(l)).join('\n') + '\n');
+
+    // Set mtime to 5 seconds ago — should trigger 'working' status
+    const recentMtime = new Date(Date.now() - 5000);
+    fs.utimesSync(filePath, recentMtime, recentMtime);
+
+    const result = await getActiveSessions();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(sessionId);
+    expect(result[0].status).toBe('working');
+    expect(result[0].projectId).toBe(projectId);
+  });
+
+  test('returns accurate token counts from full parse', async () => {
+    const projectId = 'token-project';
+    const projectDir = path.join(orchestratorTmpDir, projectId);
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    const sessionId = 'session-tokens';
+    const filePath = path.join(projectDir, `${sessionId}.jsonl`);
+
+    const msg1 = makeMessage({
+      type: 'assistant',
+      uuid: 'a1',
+      message: {
+        role: 'assistant',
+        content: 'Response 1',
+        model: 'claude-sonnet-4-6',
+        usage: {
+          input_tokens: 100,
+          output_tokens: 50,
+          cache_creation_input_tokens: 10,
+          cache_read_input_tokens: 5,
+        },
+      },
+    });
+    const msg2 = makeMessage({
+      type: 'assistant',
+      uuid: 'a2',
+      message: {
+        role: 'assistant',
+        content: 'Response 2',
+        model: 'claude-sonnet-4-6',
+        usage: {
+          input_tokens: 200,
+          output_tokens: 100,
+          cache_creation_input_tokens: 20,
+          cache_read_input_tokens: 10,
+        },
+      },
+    });
+
+    fs.writeFileSync(filePath, [msg1, msg2].map(l => JSON.stringify(l)).join('\n') + '\n');
+
+    // Set mtime to 5 seconds ago to keep in active window
+    const recentMtime = new Date(Date.now() - 5000);
+    fs.utimesSync(filePath, recentMtime, recentMtime);
+
+    const result = await getActiveSessions();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].totalInputTokens).toBe(300);
+    expect(result[0].totalOutputTokens).toBe(150);
+    expect(result[0].totalCacheWriteTokens).toBe(30);
+    expect(result[0].totalCacheReadTokens).toBe(15);
+  });
+
+  test('evicts cache entries for sessions no longer in active window', async () => {
+    const projectId = 'evict-project';
+    const projectDir = path.join(orchestratorTmpDir, projectId);
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    const sessionId = 'session-evict';
+    const filePath = path.join(projectDir, `${sessionId}.jsonl`);
+
+    const msg = makeMessage({
+      type: 'assistant',
+      uuid: 'a1',
+      message: { role: 'assistant', content: 'Hello', model: 'claude-sonnet-4-6' },
+    });
+    fs.writeFileSync(filePath, JSON.stringify(msg) + '\n');
+
+    // Set mtime to 5 seconds ago — active
+    const activeMtime = new Date(Date.now() - 5000);
+    fs.utimesSync(filePath, activeMtime, activeMtime);
+
+    // First call — populates cache
+    const firstResult = await getActiveSessions();
+    expect(firstResult).toHaveLength(1);
+
+    // Delete the file to simulate session leaving the active window
+    fs.unlinkSync(filePath);
+
+    // Second call — session should be evicted
+    const secondResult = await getActiveSessions();
+    expect(secondResult).toEqual([]);
+  });
+
+  test('populates projectName, projectPath, cwd, gitBranch from helpers and messages', async () => {
+    const projectId = 'branch-project';
+    const projectDir = path.join(orchestratorTmpDir, projectId);
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    const sessionId = 'session-branch';
+    const filePath = path.join(projectDir, `${sessionId}.jsonl`);
+
+    const msg = makeMessage({
+      type: 'assistant',
+      uuid: 'a1',
+      gitBranch: 'feature/test',
+      message: {
+        role: 'assistant',
+        content: 'Hello',
+        model: 'claude-sonnet-4-6',
+      },
+    });
+    fs.writeFileSync(filePath, JSON.stringify(msg) + '\n');
+
+    const recentMtime = new Date(Date.now() - 5000);
+    fs.utimesSync(filePath, recentMtime, recentMtime);
+
+    const result = await getActiveSessions();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].projectName).toBe(`Project ${projectId}`);
+    expect(result[0].projectPath).toBe(`/home/user/${projectId}`);
+    expect(result[0].cwd).toBe('/home/user/project');
+    expect(result[0].gitBranch).toBe('feature/test');
   });
 });
