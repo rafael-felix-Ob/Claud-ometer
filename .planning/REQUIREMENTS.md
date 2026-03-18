@@ -1,0 +1,105 @@
+# Requirements: Claud-ometer — Active Sessions
+
+**Defined:** 2026-03-18
+**Core Value:** At a glance, know what every active Claude Code session is doing right now
+
+## v1 Requirements
+
+Requirements for the active sessions feature. Each maps to roadmap phases.
+
+### Detection
+
+- [ ] **DETECT-01**: System detects active sessions by scanning JSONL files modified within the last 10 minutes
+- [ ] **DETECT-02**: System infers session status as "working" when last message is assistant with tool calls or file was modified within last 10 seconds
+- [ ] **DETECT-03**: System infers session status as "waiting" when last message is assistant text without pending tool calls
+- [ ] **DETECT-04**: System infers session status as "idle" when no file modification in the last 5 minutes but session was recently active
+- [ ] **DETECT-05**: System uses tail-read (last 16KB) of JSONL files instead of full re-parse for performance
+- [ ] **DETECT-06**: System treats incomplete last-line parse as "working" (write in progress)
+
+### Display
+
+- [ ] **DISP-01**: User can view active session duration (time since session started)
+- [ ] **DISP-02**: User can view consumed tokens per active session
+- [ ] **DISP-03**: User can view project name and path for each active session
+- [ ] **DISP-04**: User can view git branch for each active session
+- [ ] **DISP-05**: User can view which Claude model each active session is using
+- [ ] **DISP-06**: User can click through to full session detail at /sessions/[id]
+
+### GSD Progress
+
+- [ ] **GSD-01**: User can view current GSD phase name and status for sessions with .planning/ directories
+- [ ] **GSD-02**: User can view the next GSD action for each active GSD session
+- [ ] **GSD-03**: GSD progress gracefully shows nothing when .planning/ directory is absent
+
+### UI
+
+- [ ] **UI-01**: Dedicated /active page with card grid layout
+- [ ] **UI-02**: Sidebar navigation entry with Activity icon
+- [ ] **UI-03**: Cards auto-refresh every 5 seconds with last-updated indicator
+- [ ] **UI-04**: Animated pulse indicator on "working" status sessions
+- [ ] **UI-05**: Cards ordered by status: working first, waiting second, idle last
+- [ ] **UI-06**: Empty state displayed when no active sessions detected
+- [ ] **UI-07**: Banner displayed when using imported data mode (live monitoring unavailable)
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Advanced Monitoring
+
+- **ADV-01**: Token velocity indicator (tokens/minute for current session)
+- **ADV-02**: Idle threshold customization via settings
+- **ADV-03**: Active session count badge on sidebar nav icon
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| WebSocket/SSE push updates | Polling at 5s is simple and adequate; breaks stateless API pattern |
+| Desktop/browser notifications | Significant scope increase for a view-only page |
+| Session termination/kill controls | Dashboard is read-only; terminal is for process control |
+| Historical active session timeline | Duplicates Overview/Costs pages |
+| Embedded conversation replay in cards | Defeats at-a-glance card grid purpose |
+| Per-session cost prediction | Unreliable future-state prediction; show cost-to-date instead |
+| Configurable polling interval UI | 5 seconds is the right default; no user need for flexibility |
+| Process-level detection (ps aux) | File watching is sufficient and more portable |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DETECT-01 | — | Pending |
+| DETECT-02 | — | Pending |
+| DETECT-03 | — | Pending |
+| DETECT-04 | — | Pending |
+| DETECT-05 | — | Pending |
+| DETECT-06 | — | Pending |
+| DISP-01 | — | Pending |
+| DISP-02 | — | Pending |
+| DISP-03 | — | Pending |
+| DISP-04 | — | Pending |
+| DISP-05 | — | Pending |
+| DISP-06 | — | Pending |
+| GSD-01 | — | Pending |
+| GSD-02 | — | Pending |
+| GSD-03 | — | Pending |
+| UI-01 | — | Pending |
+| UI-02 | — | Pending |
+| UI-03 | — | Pending |
+| UI-04 | — | Pending |
+| UI-05 | — | Pending |
+| UI-06 | — | Pending |
+| UI-07 | — | Pending |
+
+**Coverage:**
+- v1 requirements: 22 total
+- Mapped to phases: 0
+- Unmapped: 22 ⚠️
+
+---
+*Requirements defined: 2026-03-18*
+*Last updated: 2026-03-18 after initial definition*
