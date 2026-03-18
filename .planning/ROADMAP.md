@@ -71,5 +71,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Detection Engine | 3/3 | Complete    | 2026-03-18 |
-| 2. Active Sessions Page | 3/3 | Complete   | 2026-03-18 |
+| 2. Active Sessions Page | 3/3 | Complete    | 2026-03-18 |
 | 3. GSD Integration | 0/TBD | Not started | - |
