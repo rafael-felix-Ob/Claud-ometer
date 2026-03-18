@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Checkpoint 03-02-PLAN.md Task 3 (human-verify)
-last_updated: "2026-03-18T20:15:22.683Z"
+stopped_at: Completed 03-02-PLAN.md (GSD wire + render, all 3 tasks done)
+last_updated: "2026-03-18T20:22:45.777Z"
 last_activity: 2026-03-18 — Completed 02-03 (card expansion, visual verification approved)
 progress:
   total_phases: 3
@@ -60,6 +60,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-active-sessions-page P03 | 15 | 2 tasks | 1 files |
 | Phase 03-gsd-integration P01 | 3 | 1 tasks | 3 files |
 | Phase 03-gsd-integration P02 | 5 | 2 tasks | 2 files |
+| Phase 03-gsd-integration P02 | 20 | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,7 @@ Recent decisions affecting current work:
 - [Phase 03-gsd-integration]: jest.mock('fs') for readGsdProgress unit tests — enables deterministic fixture control without real filesystem reads
 - [Phase 03-gsd-integration]: GSD badge placed in flex container wrapping project name to keep name+badge together and truncate correctly
 - [Phase 03-gsd-integration]: GSD progress section added as separate CardContent block to preserve existing card layout and opacity logic
+- [Phase 03-gsd-integration]: readGsdProgress called with cwd (not projectPath) to avoid hyphen-to-slash decoding issues on Windows WSL paths
 
 ### Pending Todos
 
@@ -102,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:15:22.649Z
-Stopped at: Checkpoint 03-02-PLAN.md Task 3 (human-verify)
+Last session: 2026-03-18T20:22:45.760Z
+Stopped at: Completed 03-02-PLAN.md (GSD wire + render, all 3 tasks done)
 Resume file: None
