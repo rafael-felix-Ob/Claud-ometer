@@ -185,7 +185,7 @@ export default function ActiveSessionsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-2 gap-4">
           {sorted.map((session) => {
             const config = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.idle;
             const totalTokens = computeTotalTokens(session);
