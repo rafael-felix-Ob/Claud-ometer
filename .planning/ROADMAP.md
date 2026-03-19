@@ -84,10 +84,11 @@ Plans:
   3. User can merge a `.db` file from another machine and sessions present in both are deduplicated by session ID with the higher message-count version preserved
   4. Merging the same `.db` file twice produces the same row count as merging it once (idempotent merge)
   5. Project detail page shows an activity bar chart of daily usage for that project
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
+- [ ] 08-01-PLAN.md — Backend: API routes for DB export/import/merge, activity query, tests
+- [ ] 08-02-PLAN.md — Frontend: Database section on /data page, project activity chart
 
 ## Progress
 
@@ -103,4 +104,4 @@ Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 | 5. SQLite Foundation | v1.1 | 1/1 | Complete | 2026-03-19 |
 | 6. Delta Ingest | 2/2 | Complete   | 2026-03-19 | - |
 | 7. API Migration | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 8. Portability and UI | v1.1 | 0/? | Not started | - |
+| 8. Portability and UI | v1.1 | 0/2 | Not started | - |
