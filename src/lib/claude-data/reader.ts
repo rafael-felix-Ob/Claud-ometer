@@ -203,7 +203,7 @@ export async function getSessions(limit = 50, offset = 0): Promise<SessionInfo[]
   return allSessions.slice(offset, offset + limit);
 }
 
-async function parseSessionFile(filePath: string, projectId: string, projectName: string): Promise<SessionInfo> {
+export async function parseSessionFile(filePath: string, projectId: string, projectName: string): Promise<SessionInfo> {
   const sessionId = path.basename(filePath, '.jsonl');
 
   let firstTimestamp = '';
