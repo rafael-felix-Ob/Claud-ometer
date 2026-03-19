@@ -6,6 +6,7 @@ import { CostChart } from '@/components/charts/cost-chart';
 import { formatCost, formatTokens } from '@/lib/format';
 import { calculateCost, getModelDisplayName, getModelColor, MODEL_PRICING } from '@/config/pricing';
 import { Coins, TrendingUp, Zap, Database } from 'lucide-react';
+import { FirstSyncBanner } from '@/components/first-sync-banner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -79,6 +80,8 @@ export default function CostsPage() {
         <h1 className="text-xl font-bold tracking-tight">Cost Analytics</h1>
         <p className="text-sm text-muted-foreground">Understand your Claude Code spending</p>
       </div>
+
+      <FirstSyncBanner />
 
       <div className="grid grid-cols-4 gap-4">
         <StatCard

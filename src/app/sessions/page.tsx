@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, GitBranch, MessageSquare, FolderKanban, Minimize2, Search, X, Timer } from 'lucide-react';
 import Link from 'next/link';
+import { FirstSyncBanner } from '@/components/first-sync-banner';
 
 function useDebounce(value: string, delay: number) {
   const [debounced, setDebounced] = useState(value);
@@ -74,6 +75,8 @@ function SessionsContent() {
           </p>
         </div>
       </div>
+
+      <FirstSyncBanner />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

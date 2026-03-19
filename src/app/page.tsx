@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { FirstSyncBanner } from '@/components/first-sync-banner';
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useStats();
@@ -40,6 +41,8 @@ export default function DashboardPage() {
         <h1 className="text-xl font-bold tracking-tight">Overview</h1>
         <p className="text-sm text-muted-foreground">Your Claude Code usage at a glance</p>
       </div>
+
+      <FirstSyncBanner />
 
       {/* Hero Stats */}
       <div className="grid grid-cols-4 gap-4">
