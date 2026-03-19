@@ -20,7 +20,7 @@ Requirements for the history database milestone. Each maps to roadmap phases.
 - [x] **ING-01**: System runs a periodic background job (every 2-5 minutes) that scans for new/modified JSONL files and ingests delta
 - [x] **ING-02**: Ingest uses two-factor delta check (mtime + file size) to skip unchanged files
 - [x] **ING-03**: On first run, system bulk-imports all existing JSONL session history into SQLite
-- [ ] **ING-04**: User can see last sync time and session count in the UI (ingest status indicator)
+- [x] **ING-04**: User can see last sync time and session count in the UI (ingest status indicator)
 
 ### API Migration
 
@@ -37,7 +37,7 @@ Requirements for the history database milestone. Each maps to roadmap phases.
 ### UI
 
 - [ ] **UI-01**: Project detail page shows an activity chart (similar to overview heatmap)
-- [ ] **UI-02**: Sidebar shows sync status indicator (last ingest time, DB health)
+- [x] **UI-02**: Sidebar shows sync status indicator (last ingest time, DB health)
 
 ## v2 Requirements
 
@@ -80,7 +80,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ING-01 | Phase 6 | Complete |
 | ING-02 | Phase 6 | Complete |
 | ING-03 | Phase 6 | Complete |
-| ING-04 | Phase 6 | Pending |
+| ING-04 | Phase 6 | Complete |
 | API-01 | Phase 7 | Pending |
 | API-02 | Phase 7 | Pending |
 | API-03 | Phase 7 | Pending |
@@ -88,7 +88,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PORT-02 | Phase 8 | Pending |
 | PORT-03 | Phase 8 | Pending |
 | UI-01 | Phase 8 | Pending |
-| UI-02 | Phase 6 | Pending |
+| UI-02 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 17 total

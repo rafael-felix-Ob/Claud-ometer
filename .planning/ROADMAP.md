@@ -22,7 +22,7 @@
 **Milestone Goal:** Persist parsed session data into a local SQLite database so all historical pages load from pre-parsed rows instead of re-scanning the filesystem on every request, with cross-machine portability via .db file export/import/merge.
 
 - [x] **Phase 5: SQLite Foundation** — DB connection, schema, WAL mode, Linux ext4 placement, and build config verified before any data is written (completed 2026-03-19)
-- [ ] **Phase 6: Delta Ingest** — Background job populates the database; two-factor delta check keeps ingest fast; sync status visible in UI
+- [x] **Phase 6: Delta Ingest** — Background job populates the database; two-factor delta check keeps ingest fast; sync status visible in UI (completed 2026-03-19)
 - [ ] **Phase 7: API Migration** — All historical pages read from SQLite; active sessions and session detail messages continue reading JSONL
 - [ ] **Phase 8: Portability and UI** — Export/import/merge .db files across machines; project detail activity chart powered by DB
 
@@ -100,6 +100,6 @@ Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 | 3. GSD Integration | v1.0 | 2/2 | Complete | 2026-03-18 |
 | 4. Tech Debt Cleanup | v1.0 | 1/1 | Complete | 2026-03-19 |
 | 5. SQLite Foundation | v1.1 | 1/1 | Complete | 2026-03-19 |
-| 6. Delta Ingest | 1/2 | In Progress|  | - |
+| 6. Delta Ingest | 2/2 | Complete   | 2026-03-19 | - |
 | 7. API Migration | v1.1 | 0/? | Not started | - |
 | 8. Portability and UI | v1.1 | 0/? | Not started | - |

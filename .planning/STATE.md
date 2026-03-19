@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: History Database
 status: unknown
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-19T16:07:33.681Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-19T16:19:37.314Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -42,6 +42,7 @@ Recent decisions affecting current work:
 - [v1.1 arch]: ON CONFLICT DO UPDATE WHERE message_count for merge — INSERT OR IGNORE freezes incomplete sessions
 - [Phase 06-delta-ingest]: runIngestCycle always reads live ~/.claude/projects, not getProjectsDir() — ingest operates on live data regardless of UI data source toggle
 - [Phase 06-delta-ingest]: recomputeAggregates uses DELETE+INSERT per cycle for full consistency over UPSERT approach
+- [Phase 06-delta-ingest]: SyncStatus interface defined in hooks.ts (not imported from ingest.ts) to keep client/server boundary clean
 
 ### Pending Todos
 
@@ -54,6 +55,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T16:07:33.625Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-19T16:19:37.290Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
