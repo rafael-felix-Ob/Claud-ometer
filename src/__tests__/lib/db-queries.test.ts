@@ -16,7 +16,9 @@ import {
   searchSessionsFromDb,
   getProjectsFromDb,
   getSessionDetailFromDb,
+  getProjectActivityFromDb,
 } from '@/lib/db-queries';
+import { recomputeAggregates } from '@/lib/ingest';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -489,5 +491,78 @@ describe('getSessionDetailFromDb', () => {
     expect(detail!.compaction.compactions).toBe(2);
     expect(detail!.compaction.microcompactions).toBe(1);
     expect(detail!.compaction.totalTokensSaved).toBe(1000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getProjectActivityFromDb
+// ---------------------------------------------------------------------------
+
+describe('getProjectActivityFromDb', () => {
+  test('returns DailyActivity[] filtered by project_id', () => {
+    // Use recent timestamps within the 30-day window
+    const recentTs = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    // Seed sessions for two projects, then recompute aggregates to populate daily_activity
+    seedTestSession(db, { id: 's1-activity', project_id: 'proj-a', project_name: 'ProjA', timestamp: recentTs });
+    seedTestSession(db, { id: 's2-activity', project_id: 'proj-b', project_name: 'ProjB', timestamp: recentTs });
+    recomputeAggregates(db);
+
+    const activity = getProjectActivityFromDb('proj-a');
+    expect(Array.isArray(activity)).toBe(true);
+    // Should only return activity for proj-a
+    for (const entry of activity) {
+      expect(entry.date).toBeDefined();
+      expect(typeof entry.messageCount).toBe('number');
+      expect(typeof entry.sessionCount).toBe('number');
+      expect(typeof entry.toolCallCount).toBe('number');
+    }
+  });
+
+  test('returns empty array for unknown project_id', () => {
+    seedTestSession(db, { id: 's1', project_id: 'proj-x', project_name: 'ProjX', timestamp: '2024-03-15T10:00:00.000Z' });
+    recomputeAggregates(db);
+
+    const activity = getProjectActivityFromDb('proj-does-not-exist');
+    expect(activity).toEqual([]);
+  });
+
+  test('results are ordered by date ASC', () => {
+    // Use recent dates within the 30-day window
+    const d1 = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const d2 = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    const d3 = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+
+    seedTestSession(db, { id: 's1-ordered', project_id: 'proj-ordered', project_name: 'ProjOrdered', timestamp: d3 });
+    seedTestSession(db, { id: 's2-ordered', project_id: 'proj-ordered', project_name: 'ProjOrdered', timestamp: d1 });
+    seedTestSession(db, { id: 's3-ordered', project_id: 'proj-ordered', project_name: 'ProjOrdered', timestamp: d2 });
+    recomputeAggregates(db);
+
+    const activity = getProjectActivityFromDb('proj-ordered');
+    expect(activity.length).toBe(3);
+    // Dates should be in ascending order
+    for (let i = 1; i < activity.length; i++) {
+      expect(activity[i].date >= activity[i - 1].date).toBe(true);
+    }
+  });
+
+  test('respects 30-day window (excludes records older than 30 days)', () => {
+    // Seed a very old session (more than 30 days ago)
+    const oldDate = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString();
+    const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+
+    seedTestSession(db, { id: 's-old', project_id: 'proj-window', project_name: 'ProjWindow', timestamp: oldDate });
+    seedTestSession(db, { id: 's-recent', project_id: 'proj-window', project_name: 'ProjWindow', timestamp: recentDate });
+    recomputeAggregates(db);
+
+    const activity = getProjectActivityFromDb('proj-window', 30);
+    // Old session should be excluded
+    const oldDateStr = oldDate.slice(0, 10);
+    const oldEntry = activity.find(a => a.date === oldDateStr);
+    expect(oldEntry).toBeUndefined();
+
+    // Recent session should be included
+    const recentDateStr = recentDate.slice(0, 10);
+    const recentEntry = activity.find(a => a.date === recentDateStr);
+    expect(recentEntry).toBeDefined();
   });
 });

@@ -75,6 +75,18 @@ export function _resetSyncStateForTesting(): void {
  *
  * @param projectsDir Optional override for testability (defaults to ~/.claude/projects)
  */
+/**
+ * Stops the ingest scheduler by clearing the globalThis timer.
+ * Safe to call even if no scheduler is running.
+ * Used during DB replace imports to halt background ingestion.
+ */
+export function stopIngestScheduler(): void {
+  if (globalThis.__claudeometerIngestTimer) {
+    clearInterval(globalThis.__claudeometerIngestTimer);
+    globalThis.__claudeometerIngestTimer = undefined;
+  }
+}
+
 export function startIngestScheduler(projectsDir?: string): void {
   if (globalThis.__claudeometerIngestTimer) return;
 
@@ -292,8 +304,9 @@ function getProjectName(projectDirPath: string, projectId: string): string {
 /**
  * Recomputes all aggregate tables (projects, daily_activity, model_usage)
  * from the sessions table. Runs as a single atomic transaction.
+ * Exported for use by the DB import merge handler (PORT-03).
  */
-function recomputeAggregates(db: Database.Database): void {
+export function recomputeAggregates(db: Database.Database): void {
   const runAggregates = db.transaction(() => {
     // Projects
     db.prepare('DELETE FROM projects').run();

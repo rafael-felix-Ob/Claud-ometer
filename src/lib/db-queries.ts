@@ -401,6 +401,30 @@ export async function getProjectsFromDb(): Promise<ProjectInfo[]> {
 }
 
 /**
+ * Returns daily activity for a specific project over the last N days.
+ * Filters by project_id and date >= N days ago, ordered by date ASC.
+ * Used by the /api/projects/[id]/activity route for the project activity chart (UI-01).
+ */
+export function getProjectActivityFromDb(projectId: string, days = 30): DailyActivity[] {
+  const db = getDb();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const rows = db.prepare(`
+    SELECT date,
+           message_count as messageCount,
+           session_count as sessionCount,
+           tool_call_count as toolCallCount
+    FROM daily_activity
+    WHERE project_id = ? AND date >= ?
+    ORDER BY date ASC
+  `).all(projectId, since) as DailyActivity[];
+
+  return rows;
+}
+
+/**
  * Returns DB aggregates merged with JSONL messages (hybrid pattern).
  * If the session row does not exist in DB, returns null.
  * If the JSONL file is missing, returns DB aggregates with empty messages[].
