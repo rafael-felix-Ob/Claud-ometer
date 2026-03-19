@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 03-02-PLAN.md (GSD wire + render, all 3 tasks done)
-last_updated: "2026-03-18T20:28:37.526Z"
-last_activity: 2026-03-18 — Completed 02-03 (card expansion, visual verification approved)
+status: unknown
+stopped_at: Completed 04-01-PLAN.md (tech debt cleanup, all 4 items fixed)
+last_updated: "2026-03-19T10:35:03.622Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** At a glance, know what every active Claude Code session is doing right now
-**Current focus:** Milestone complete — all phases delivered
+**Current focus:** Phase 04 — tech-debt-cleanup
 
 ## Current Position
 
-Phase: 3 of 3 (GSD Integration) — Complete
-Plan: 2 of 2 in current phase — Complete
-Status: All phases complete — milestone delivered
-Last activity: 2026-03-18 — Completed Phase 3 (GSD integration with progress display)
-
-Progress: [██████████] 100%
+Phase: 04 (tech-debt-cleanup) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -61,6 +55,7 @@ Progress: [██████████] 100%
 | Phase 03-gsd-integration P01 | 3 | 1 tasks | 3 files |
 | Phase 03-gsd-integration P02 | 5 | 2 tasks | 2 files |
 | Phase 03-gsd-integration P02 | 20 | 3 tasks | 2 files |
+| Phase 04-tech-debt-cleanup P04-01 | 15 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -92,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 03-gsd-integration]: GSD badge placed in flex container wrapping project name to keep name+badge together and truncate correctly
 - [Phase 03-gsd-integration]: GSD progress section added as separate CardContent block to preserve existing card layout and opacity logic
 - [Phase 03-gsd-integration]: readGsdProgress called with cwd (not projectPath) to avoid hyphen-to-slash decoding issues on Windows WSL paths
+- [Phase 04-tech-debt-cleanup]: ROADMAP Phase 1 criterion already said 30 minutes — no change needed; audit intent was correct, implementation already matched
+- [Phase 04-tech-debt-cleanup]: session.cwd rendered with font-mono truncate + title tooltip in active card CardHeader (DISP-03 complete)
 
 ### Pending Todos
 
@@ -104,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:22:45.760Z
-Stopped at: Completed 03-02-PLAN.md (GSD wire + render, all 3 tasks done)
+Last session: 2026-03-19T10:35:03.591Z
+Stopped at: Completed 04-01-PLAN.md (tech debt cleanup, all 4 items fixed)
 Resume file: None

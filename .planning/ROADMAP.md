@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Detection Engine** - Filesystem reader that infers active session status from JSONL tail-reads and mtime analysis (completed 2026-03-18)
 - [x] **Phase 2: Active Sessions Page** - API route, SWR hook, card grid UI, and all session display requirements (completed 2026-03-18)
 - [x] **Phase 3: GSD Integration** - Optional GSD build progress enrichment on cards for sessions with .planning/ directories (completed 2026-03-18)
-- [ ] **Phase 4: Tech Debt Cleanup** - Fix audit-identified tech debt: token double-counting, stale test, DISP-03 path display, doc inconsistency
+- [x] **Phase 4: Tech Debt Cleanup** - Fix audit-identified tech debt: token double-counting, stale test, DISP-03 path display, doc inconsistency (completed 2026-03-19)
 
 ## Phase Details
 
@@ -78,7 +78,7 @@ Plans:
   2. ROADMAP success criterion 1 for Phase 1 says "30 minutes" (matching implementation and REQUIREMENTS)
   3. Active session cards display project path below project name (DISP-03 fully satisfied)
   4. getActiveSessions test assertion for projectName matches current path.basename(cwd) behavior
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 04-01-PLAN.md — Fix all 4 tech debt items in one plan
@@ -93,4 +93,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Detection Engine | 3/3 | Complete    | 2026-03-18 |
 | 2. Active Sessions Page | 3/3 | Complete    | 2026-03-18 |
 | 3. GSD Integration | 2/2 | Complete    | 2026-03-18 |
-| 4. Tech Debt Cleanup | 0/1 | Not started | - |
+| 4. Tech Debt Cleanup | 1/1 | Complete   | 2026-03-19 |
