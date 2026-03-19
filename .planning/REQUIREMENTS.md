@@ -9,11 +9,11 @@ Requirements for the history database milestone. Each maps to roadmap phases.
 
 ### Database Foundation
 
-- [ ] **DB-01**: System stores session data in a local SQLite database with WAL mode enabled
-- [ ] **DB-02**: System uses better-sqlite3 for direct SQLite access with TypeScript types from types.ts
-- [ ] **DB-03**: Database schema auto-applies on first startup via instrumentation.ts (zero manual setup)
-- [ ] **DB-04**: Database connection uses globalThis singleton pattern to prevent hot-reload duplication
-- [ ] **DB-05**: Database file lives on Linux ext4 filesystem (not NTFS via WSL) to avoid locking issues
+- [x] **DB-01**: System stores session data in a local SQLite database with WAL mode enabled
+- [x] **DB-02**: System uses better-sqlite3 for direct SQLite access with TypeScript types from types.ts
+- [x] **DB-03**: Database schema auto-applies on first startup via instrumentation.ts (zero manual setup)
+- [x] **DB-04**: Database connection uses globalThis singleton pattern to prevent hot-reload duplication
+- [x] **DB-05**: Database file lives on Linux ext4 filesystem (not NTFS via WSL) to avoid locking issues
 
 ### Ingest
 
@@ -72,11 +72,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 | Phase 5 | Pending |
-| DB-02 | Phase 5 | Pending |
-| DB-03 | Phase 5 | Pending |
-| DB-04 | Phase 5 | Pending |
-| DB-05 | Phase 5 | Pending |
+| DB-01 | Phase 5 | Complete |
+| DB-02 | Phase 5 | Complete |
+| DB-03 | Phase 5 | Complete |
+| DB-04 | Phase 5 | Complete |
+| DB-05 | Phase 5 | Complete |
 | ING-01 | Phase 6 | Pending |
 | ING-02 | Phase 6 | Pending |
 | ING-03 | Phase 6 | Pending |

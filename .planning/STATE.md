@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: History Database
-status: planning
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-19T14:37:43.824Z"
-last_activity: 2026-03-19 — Roadmap created for v1.1 History Database
+status: in-progress
+stopped_at: "Completed 05-01-PLAN.md"
+last_updated: "2026-03-19T15:09:35Z"
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** At a glance, know what every active Claude Code session is doing right now
-**Current focus:** Phase 5 — SQLite Foundation (ready to plan)
+**Current focus:** Phase 06 — Ingest Engine (next phase)
 
 ## Current Position
 
-Phase: 5 of 8 (SQLite Foundation)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-19 — Roadmap created for v1.1 History Database
-
-Progress: [░░░░░░░░░░] 0% (v1.1)
+Phase: 05 (SQLite Foundation) — COMPLETE
+Plan: 1 of 1 complete
 
 ## Accumulated Context
 
@@ -53,11 +47,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 5]: Verify project_id column on daily_activity table — required by Phase 8 activity chart; schema decision must be correct before any data is written
+- [Phase 5 RESOLVED]: daily_activity table includes project_id as part of composite PK — confirmed correct for Phase 8 activity chart
 - [Phase 5]: Confirm instrumentation.ts vs module-level import for scheduler init — decide once to avoid both approaches coexisting
 
 ## Session Continuity
 
-Last session: 2026-03-19T14:37:43.805Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-sqlite-foundation/05-CONTEXT.md
+Last session: 2026-03-19T15:09:35Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: .planning/phases/05-sqlite-foundation/05-01-SUMMARY.md
