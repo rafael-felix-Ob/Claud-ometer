@@ -87,8 +87,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Backend: API routes for DB export/import/merge, activity query, tests
-- [ ] 08-02-PLAN.md — Frontend: Database section on /data page, project activity chart
+- [x] 08-01-PLAN.md — Backend: API routes for DB export/import/merge, activity query, tests
+- [x] 08-02-PLAN.md — Frontend: Database section on /data page, project activity chart
 
 ## Progress
 
