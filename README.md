@@ -61,8 +61,9 @@ Open [http://localhost:3000](http://localhost:3000). The dashboard reads from yo
 - **Recharts** for charts
 - **SWR** for data fetching
 - **Lucide** icons
+- **better-sqlite3** for local SQLite persistence (WAL mode)
 
-No database required. Reads `~/.claude/` files directly via Node.js API routes.
+Historical data is persisted in a local SQLite database (`~/.claude/claud-ometer.db`). A background ingest job syncs JSONL files to SQLite every 2 minutes. Active sessions still read live JSONL files directly.
 
 ## Project Structure
 
@@ -108,6 +109,74 @@ Export your data to share across machines or keep as a backup:
 2. Click **Export as ZIP** to download all your Claude Code data
 3. On another machine, upload the ZIP via **Import** to view the dashboard with that data
 4. Toggle between **Live** (reads ~/.claude/) and **Imported** data at any time
+
+### Database Portability
+
+The **Database** section on the Data page lets you move your SQLite history across machines:
+
+- **Export .db** — Download a standalone `.db` file (WAL-safe copy)
+- **Replace** — Upload a `.db` file to replace your current database (with confirmation)
+- **Merge** — Upload a `.db` file from another machine; sessions are deduplicated by ID (higher message count wins)
+
+## Production Setup
+
+### Quick start
+
+```bash
+npm run build
+npm start
+```
+
+### Auto-start on WSL boot (systemd)
+
+Create the service:
+
+```bash
+mkdir -p ~/.config/systemd/user
+
+cat > ~/.config/systemd/user/claud-ometer.service << 'EOF'
+[Unit]
+Description=Claud-ometer Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/Claud-ometer
+ExecStart=/path/to/npx next start -p 3000
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PATH=/path/to/node/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target
+EOF
+```
+
+> Replace `/path/to/` with your actual paths. Run `which npx` and `which node` to find them.
+
+Enable and start:
+
+```bash
+npm run build
+systemctl --user daemon-reload
+systemctl --user enable claud-ometer
+systemctl --user start claud-ometer
+```
+
+### Cheat sheet
+
+```bash
+systemctl --user status claud-ometer      # Check status
+systemctl --user restart claud-ometer     # Restart (after npm run build)
+systemctl --user stop claud-ometer        # Stop
+journalctl --user -u claud-ometer -f      # View logs
+systemctl --user disable claud-ometer     # Disable auto-start
+```
+
+> **After code changes:** always `npm run build` before restarting the service.
+
+> **WSL2 + Turbopack note:** If `npm run dev` shows a white page, delete the cache: `rm -rf .next && npm run dev`
 
 ## License
 
