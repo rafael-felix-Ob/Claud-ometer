@@ -18,6 +18,7 @@ v1.0 delivered real-time active session detection and display. All 22 requiremen
 
 Phase 5 complete — SQLite foundation with better-sqlite3 singleton, WAL mode, and 5-table schema (DB-01 through DB-05 validated).
 Phase 6 complete — Delta ingest with 2-minute scheduler, two-factor delta check, sidebar sync status (ING-01 through ING-04, UI-02 validated).
+Phase 7 complete — All historical API routes read from SQLite, stats-cache.json retired, 6 typed DB query functions (API-01 through API-03 validated).
 
 ## Requirements
 
@@ -56,7 +57,7 @@ Phase 6 complete — Delta ingest with 2-minute scheduler, two-factor delta chec
 
 - [x] SQLite database schema and persistence layer — Phase 5
 - [x] Periodic background JSONL → SQLite ingest (delta sync) — Phase 6
-- [ ] Migrate all API routes to read from database instead of JSONL
+- [x] Migrate all API routes to read from database instead of JSONL — Phase 7
 - [ ] Activity chart on project detail page
 - [ ] Export/import database file
 - [ ] Merge databases from different machines with deduplication
@@ -92,4 +93,4 @@ Phase 6 complete — Delta ingest with 2-minute scheduler, two-factor delta chec
 - **Compatibility**: Works alongside data source toggle (live vs imported)
 
 ---
-*Last updated: 2026-03-19 after Phase 6 completion*
+*Last updated: 2026-03-19 after Phase 7 completion*
