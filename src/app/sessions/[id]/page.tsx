@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft, Clock, GitBranch, MessageSquare, Wrench,
-  User, Bot, Coins, Activity, Minimize2
+  User, Bot, Coins, Activity, Minimize2, Timer
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -75,12 +75,19 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Session Stats */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-7 gap-3">
         <Card className="border-border/50 shadow-sm">
           <CardContent className="p-3 text-center">
             <Clock className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
             <p className="text-lg font-bold">{formatDuration(session.duration)}</p>
-            <p className="text-[10px] text-muted-foreground">Duration</p>
+            <p className="text-[10px] text-muted-foreground">Total Time</p>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50 shadow-sm">
+          <CardContent className="p-3 text-center">
+            <Timer className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
+            <p className="text-lg font-bold">{formatDuration(session.activeTime || 0)}</p>
+            <p className="text-[10px] text-muted-foreground">Work Time</p>
           </CardContent>
         </Card>
         <Card className="border-border/50 shadow-sm">

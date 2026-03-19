@@ -127,6 +127,7 @@ export interface SessionInfo {
   projectName: string;
   timestamp: string;
   duration: number;
+  activeTime: number;          // ms — sum of inter-message gaps below idle threshold
   messageCount: number;
   userMessageCount: number;
   assistantMessageCount: number;
@@ -171,4 +172,38 @@ export interface DashboardStats {
   longestSession: LongestSession;
   projectCount: number;
   recentSessions: SessionInfo[];
+}
+
+export type SessionStatus = 'working' | 'waiting' | 'idle';
+
+export interface ActiveSessionInfo {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectPath: string;
+  cwd: string;
+  gitBranch: string;
+  status: SessionStatus;
+  duration: number;           // ms — current contiguous activity block
+  activeTime: number;         // ms — sum of inter-message gaps below idle threshold
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheReadTokens: number;
+  totalCacheWriteTokens: number;
+  estimatedCost: number;
+  model: string;              // last used model
+  models: string[];           // all models used in session
+  lastActivity: string;       // ISO timestamp — file mtime
+  gsdProgress?: GsdProgress | null;
+}
+
+export interface GsdProgress {
+  isGsd: true;
+  phaseName: string | null;
+  phaseNumber: number | null;
+  phaseStatus: string | null;
+  nextAction: string | null;
+  totalPhases: number | null;
+  completedPhases: number | null;
+  percent: number | null;
 }

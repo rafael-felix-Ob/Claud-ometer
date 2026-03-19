@@ -6,7 +6,7 @@ import { useSessions } from '@/lib/hooks';
 import { formatCost, formatDuration, timeAgo, formatTokens } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, GitBranch, MessageSquare, FolderKanban, Minimize2, Search, X } from 'lucide-react';
+import { Clock, GitBranch, MessageSquare, FolderKanban, Minimize2, Search, X, Timer } from 'lucide-react';
 import Link from 'next/link';
 
 function useDebounce(value: string, delay: number) {
@@ -131,6 +131,12 @@ function SessionsContent() {
                       <Clock className="h-3 w-3" />
                       {formatDuration(session.duration)}
                     </span>
+                    {(session.activeTime || 0) > 0 && (
+                      <span className="flex items-center gap-1" title="Active work time (excludes idle)">
+                        <Timer className="h-3 w-3" />
+                        {formatDuration(session.activeTime)}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1">
                       <MessageSquare className="h-3 w-3" />
                       {session.messageCount} msgs

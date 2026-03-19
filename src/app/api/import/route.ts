@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     }
 
     const importDir = getImportDir();
+    const resolvedImportDir = path.resolve(importDir);
 
     // Clean previous import
     if (fs.existsSync(importDir)) {
@@ -39,24 +40,49 @@ export async function POST(request: Request) {
     }
     fs.mkdirSync(importDir, { recursive: true });
 
-    // Extract all files
+    // Extract all files with security checks
+    const MAX_FILES = 10000;
+    const MAX_TOTAL_SIZE = 500 * 1024 * 1024; // 500MB
     let fileCount = 0;
     let totalSize = 0;
 
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
       if (zipEntry.dir) continue;
 
-      const targetPath = path.join(importDir, relativePath);
-      const targetDir = path.dirname(targetPath);
+      // Path traversal protection: ensure extracted path stays within importDir
+      const targetPath = path.resolve(importDir, relativePath);
+      if (!targetPath.startsWith(resolvedImportDir + path.sep) && targetPath !== resolvedImportDir) {
+        return NextResponse.json(
+          { error: 'Invalid archive: contains path traversal entries' },
+          { status: 400 }
+        );
+      }
 
+      // ZIP bomb protection: enforce file count and size limits
+      if (fileCount >= MAX_FILES) {
+        return NextResponse.json(
+          { error: 'Invalid archive: too many files (limit: 10,000)' },
+          { status: 400 }
+        );
+      }
+
+      const content = await zipEntry.async('nodebuffer');
+      totalSize += content.length;
+
+      if (totalSize > MAX_TOTAL_SIZE) {
+        return NextResponse.json(
+          { error: 'Invalid archive: extracted size exceeds 500MB limit' },
+          { status: 400 }
+        );
+      }
+
+      const targetDir = path.dirname(targetPath);
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
       }
 
-      const content = await zipEntry.async('nodebuffer');
       fs.writeFileSync(targetPath, content);
       fileCount++;
-      totalSize += content.length;
     }
 
     // Read export metadata

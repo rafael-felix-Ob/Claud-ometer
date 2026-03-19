@@ -18,7 +18,16 @@ import type {
   SessionMessage,
 } from './types';
 
+function isSymlink(filePath: string): boolean {
+  try {
+    return fs.lstatSync(filePath).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
 async function forEachJsonlLine(filePath: string, callback: (msg: SessionMessage) => void): Promise<void> {
+  if (isSymlink(filePath)) return; // Skip symlinks to prevent reading arbitrary files
   const fileStream = fs.createReadStream(filePath);
   const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
   for await (const line of rl) {
@@ -37,7 +46,7 @@ function getClaudeDir(): string {
   return path.join(os.homedir(), '.claude');
 }
 
-function getProjectsDir(): string {
+export function getProjectsDir(): string {
   return path.join(getClaudeDir(), 'projects');
 }
 
@@ -56,18 +65,19 @@ export function getHistory(): HistoryEntry[] {
   }).filter(Boolean) as HistoryEntry[];
 }
 
-function projectIdToName(id: string): string {
+export function projectIdToName(id: string): string {
   const decoded = id.replace(/^-/, '/').replace(/-/g, '/');
   const parts = decoded.split('/');
   return parts[parts.length - 1] || id;
 }
 
-function projectIdToFullPath(id: string): string {
+export function projectIdToFullPath(id: string): string {
   return id.replace(/^-/, '/').replace(/-/g, '/');
 }
 
-function extractCwdFromSession(filePath: string): string | null {
+export function extractCwdFromSession(filePath: string): string | null {
   try {
+    if (isSymlink(filePath)) return null;
     const fd = fs.openSync(filePath, 'r');
     const buffer = Buffer.alloc(8192); // Read first 8KB, enough for first few lines
     const bytesRead = fs.readSync(fd, buffer, 0, 8192, 0);
@@ -212,6 +222,10 @@ async function parseSessionFile(filePath: string, projectId: string, projectName
   const modelsSet = new Set<string>();
   const toolsUsed: Record<string, number> = {};
 
+  // Active work time tracking (5-minute idle threshold)
+  const IDLE_THRESHOLD_MS = 5 * 60 * 1000;
+  const messageTimestamps: number[] = [];
+
   // Compaction tracking
   let compactions = 0;
   let microcompactions = 0;
@@ -222,6 +236,7 @@ async function parseSessionFile(filePath: string, projectId: string, projectName
     if (msg.timestamp) {
       if (!firstTimestamp) firstTimestamp = msg.timestamp;
       lastTimestamp = msg.timestamp;
+      messageTimestamps.push(new Date(msg.timestamp).getTime());
     }
     if (msg.gitBranch && !gitBranch) gitBranch = msg.gitBranch;
     if (msg.cwd && !cwd) cwd = msg.cwd;
@@ -280,6 +295,15 @@ async function parseSessionFile(filePath: string, projectId: string, projectName
     ? new Date(lastTimestamp).getTime() - new Date(firstTimestamp).getTime()
     : 0;
 
+  // Active time: sum of inter-message gaps that are below the idle threshold
+  let activeTime = 0;
+  for (let i = 1; i < messageTimestamps.length; i++) {
+    const gap = messageTimestamps[i] - messageTimestamps[i - 1];
+    if (gap < IDLE_THRESHOLD_MS) {
+      activeTime += gap;
+    }
+  }
+
   const models = Array.from(modelsSet);
 
   return {
@@ -288,6 +312,7 @@ async function parseSessionFile(filePath: string, projectId: string, projectName
     projectName,
     timestamp: firstTimestamp || new Date().toISOString(),
     duration,
+    activeTime,
     messageCount: userMessageCount + assistantMessageCount,
     userMessageCount,
     assistantMessageCount,

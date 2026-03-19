@@ -14,6 +14,7 @@ import {
   Activity,
   Clock,
   GitBranch,
+  Timer,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -124,6 +125,12 @@ export default function DashboardPage() {
                         <Clock className="h-3 w-3" />
                         {formatDuration(session.duration)}
                       </span>
+                      {(session.activeTime || 0) > 0 && (
+                        <span className="flex items-center gap-1" title="Active work time (excludes idle)">
+                          <Timer className="h-3 w-3" />
+                          {formatDuration(session.activeTime)}
+                        </span>
+                      )}
                       <span>{session.messageCount} messages</span>
                     </div>
                   </div>
