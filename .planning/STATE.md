@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: History Database
 status: unknown
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-19T15:16:36.920Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-19T16:07:33.681Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 3
+  completed_plans: 2
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** At a glance, know what every active Claude Code session is doing right now
-**Current focus:** Phase 06 — Ingest Engine (next phase)
+**Current focus:** Phase 06 — Delta Ingest
 
 ## Current Position
 
-Phase: 05 (SQLite Foundation) — COMPLETE
-Plan: 1 of 1 complete
+Phase: 06 (Delta Ingest) — EXECUTING
+Plan: 2 of 2
 
 ## Accumulated Context
 
@@ -40,6 +40,8 @@ Recent decisions affecting current work:
 - [v1.1 arch]: Two-path data access — historical pages use SQLite, active sessions stay on live JSONL
 - [v1.1 arch]: reader.ts must NOT be modified — active sessions depend on it
 - [v1.1 arch]: ON CONFLICT DO UPDATE WHERE message_count for merge — INSERT OR IGNORE freezes incomplete sessions
+- [Phase 06-delta-ingest]: runIngestCycle always reads live ~/.claude/projects, not getProjectsDir() — ingest operates on live data regardless of UI data source toggle
+- [Phase 06-delta-ingest]: recomputeAggregates uses DELETE+INSERT per cycle for full consistency over UPSERT approach
 
 ### Pending Todos
 
@@ -48,10 +50,10 @@ None yet.
 ### Blockers/Concerns
 
 - [Phase 5 RESOLVED]: daily_activity table includes project_id as part of composite PK — confirmed correct for Phase 8 activity chart
-- [Phase 5]: Confirm instrumentation.ts vs module-level import for scheduler init — decide once to avoid both approaches coexisting
+- [Phase 5 RESOLVED]: instrumentation.ts confirmed as the startup hook — module-level import approach not used
 
 ## Session Continuity
 
-Last session: 2026-03-19T15:09:35Z
-Stopped at: Completed 05-01-PLAN.md
-Resume file: .planning/phases/05-sqlite-foundation/05-01-SUMMARY.md
+Last session: 2026-03-19T16:07:33.625Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

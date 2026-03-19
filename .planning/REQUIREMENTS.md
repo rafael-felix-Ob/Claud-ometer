@@ -17,9 +17,9 @@ Requirements for the history database milestone. Each maps to roadmap phases.
 
 ### Ingest
 
-- [ ] **ING-01**: System runs a periodic background job (every 2-5 minutes) that scans for new/modified JSONL files and ingests delta
-- [ ] **ING-02**: Ingest uses two-factor delta check (mtime + file size) to skip unchanged files
-- [ ] **ING-03**: On first run, system bulk-imports all existing JSONL session history into SQLite
+- [x] **ING-01**: System runs a periodic background job (every 2-5 minutes) that scans for new/modified JSONL files and ingests delta
+- [x] **ING-02**: Ingest uses two-factor delta check (mtime + file size) to skip unchanged files
+- [x] **ING-03**: On first run, system bulk-imports all existing JSONL session history into SQLite
 - [ ] **ING-04**: User can see last sync time and session count in the UI (ingest status indicator)
 
 ### API Migration
@@ -77,9 +77,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DB-03 | Phase 5 | Complete |
 | DB-04 | Phase 5 | Complete |
 | DB-05 | Phase 5 | Complete |
-| ING-01 | Phase 6 | Pending |
-| ING-02 | Phase 6 | Pending |
-| ING-03 | Phase 6 | Pending |
+| ING-01 | Phase 6 | Complete |
+| ING-02 | Phase 6 | Complete |
+| ING-03 | Phase 6 | Complete |
 | ING-04 | Phase 6 | Pending |
 | API-01 | Phase 7 | Pending |
 | API-02 | Phase 7 | Pending |
