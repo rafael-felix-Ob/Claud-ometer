@@ -24,7 +24,7 @@
 - [x] **Phase 5: SQLite Foundation** — DB connection, schema, WAL mode, Linux ext4 placement, and build config verified before any data is written (completed 2026-03-19)
 - [x] **Phase 6: Delta Ingest** — Background job populates the database; two-factor delta check keeps ingest fast; sync status visible in UI (completed 2026-03-19)
 - [x] **Phase 7: API Migration** — All historical pages read from SQLite; active sessions and session detail messages continue reading JSONL (completed 2026-03-19)
-- [ ] **Phase 8: Portability and UI** — Export/import/merge .db files across machines; project detail activity chart powered by DB
+- [x] **Phase 8: Portability and UI** — Export/import/merge .db files across machines; project detail activity chart powered by DB (completed 2026-03-19)
 
 ## Phase Details
 
@@ -104,4 +104,4 @@ Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 | 5. SQLite Foundation | v1.1 | 1/1 | Complete | 2026-03-19 |
 | 6. Delta Ingest | 2/2 | Complete   | 2026-03-19 | - |
 | 7. API Migration | v1.1 | 2/2 | Complete | 2026-03-19 |
-| 8. Portability and UI | 1/2 | In Progress|  | - |
+| 8. Portability and UI | 2/2 | Complete   | 2026-03-19 | - |

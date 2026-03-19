@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: History Database
 status: unknown
-stopped_at: "Completed 08-01-PLAN.md — DB portability backend and project activity API"
-last_updated: "2026-03-19T19:53:59Z"
+stopped_at: Completed 08-02-PLAN.md tasks 1-2, awaiting Task 3 human-verify checkpoint
+last_updated: "2026-03-19T20:03:38.943Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -51,6 +51,8 @@ Recent decisions affecting current work:
 - [Phase 08-01]: ATTACH DATABASE merge SQL qualifies JOIN with main.sessions to avoid "ambiguous column name" SQLite error
 - [Phase 08-01]: DB replace order: stopIngestScheduler -> close DB -> delete WAL/SHM -> write file -> createDb -> startIngestScheduler
 - [Phase 08-01]: getProjectActivityFromDb is synchronous (better-sqlite3 synchronous API); test dates use Date.now() offsets to survive 30-day window filter
+- [Phase 08-02]: ZIP-to-SQLite bridge uses /api/ingest POST route (new) — client component boundary requires server route
+- [Phase 08-02]: Ingest route passes path.join(getImportDir(), 'claude-data', 'projects') per Pitfall 6 — not getImportDir() directly
 
 ### Pending Todos
 
@@ -63,6 +65,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T19:53:59Z
-Stopped at: "Completed 08-01-PLAN.md — DB portability backend and project activity API"
+Last session: 2026-03-19T20:03:33.636Z
+Stopped at: Completed 08-02-PLAN.md tasks 1-2, awaiting Task 3 human-verify checkpoint
 Resume file: None
