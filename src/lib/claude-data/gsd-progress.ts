@@ -70,10 +70,10 @@ export function readGsdProgress(projectPath: string): GsdProgress | null {
     const statusMatch = content.match(/^Status:\s*(.+)$/m);
     const phaseStatus = statusMatch ? statusMatch[1].trim() : null;
 
-    // 4. Derive next action — null if milestone is fully complete
-    let nextAction: string | null = null;
+    // 4. Derive next action based on milestone progress
+    let nextAction: string | null;
     if (completedPhases !== null && totalPhases !== null && completedPhases >= totalPhases) {
-      nextAction = null; // Milestone complete — no next action
+      nextAction = '/gsd:complete-milestone';
     } else {
       nextAction = `/gsd:execute-phase ${phaseNumber}`;
     }
