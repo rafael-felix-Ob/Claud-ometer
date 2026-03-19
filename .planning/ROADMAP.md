@@ -23,7 +23,7 @@
 
 - [x] **Phase 5: SQLite Foundation** — DB connection, schema, WAL mode, Linux ext4 placement, and build config verified before any data is written (completed 2026-03-19)
 - [x] **Phase 6: Delta Ingest** — Background job populates the database; two-factor delta check keeps ingest fast; sync status visible in UI (completed 2026-03-19)
-- [ ] **Phase 7: API Migration** — All historical pages read from SQLite; active sessions and session detail messages continue reading JSONL
+- [x] **Phase 7: API Migration** — All historical pages read from SQLite; active sessions and session detail messages continue reading JSONL (completed 2026-03-19)
 - [ ] **Phase 8: Portability and UI** — Export/import/merge .db files across machines; project detail activity chart powered by DB
 
 ## Phase Details
@@ -71,8 +71,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Create db-queries.ts with all typed query functions + unit tests
-- [ ] 07-02-PLAN.md — Migrate 4 API routes to branch on data source, remove stats-cache machinery
+- [x] 07-01-PLAN.md — Create db-queries.ts with all typed query functions + unit tests
+- [x] 07-02-PLAN.md — Migrate 4 API routes to branch on data source, remove stats-cache machinery
 
 ### Phase 8: Portability and UI
 **Goal**: Users can move their session history across machines by exporting, importing, or merging .db files, and the project detail page shows an activity chart powered by the database
@@ -102,5 +102,5 @@ Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 | 4. Tech Debt Cleanup | v1.0 | 1/1 | Complete | 2026-03-19 |
 | 5. SQLite Foundation | v1.1 | 1/1 | Complete | 2026-03-19 |
 | 6. Delta Ingest | 2/2 | Complete   | 2026-03-19 | - |
-| 7. API Migration | 1/2 | In Progress|  | - |
+| 7. API Migration | v1.1 | 2/2 | Complete | 2026-03-19 |
 | 8. Portability and UI | v1.1 | 0/? | Not started | - |
