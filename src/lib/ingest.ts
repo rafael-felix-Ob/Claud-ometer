@@ -15,15 +15,31 @@ import { parseSessionFile } from '@/lib/claude-data/reader';
 import type Database from 'better-sqlite3';
 
 // ---------------------------------------------------------------------------
-// Module-level sync status (ING-04)
+// Sync status stored on globalThis to survive module isolation (ING-04)
+// In Next.js, instrumentation.ts and API routes may load separate module
+// instances. globalThis ensures both read/write the same state.
 // ---------------------------------------------------------------------------
 
-let lastSyncedAt: string | null = null;
-let lastSessionCount: number = 0;
-let isCurrentlyRunning: boolean = false;
+interface IngestState {
+  lastSyncedAt: string | null;
+  lastSessionCount: number;
+  isCurrentlyRunning: boolean;
+}
 
 declare global {
   var __claudeometerIngestTimer: ReturnType<typeof setInterval> | undefined;
+  var __claudeometerIngestState: IngestState | undefined;
+}
+
+function getIngestState(): IngestState {
+  if (!globalThis.__claudeometerIngestState) {
+    globalThis.__claudeometerIngestState = {
+      lastSyncedAt: null,
+      lastSessionCount: 0,
+      isCurrentlyRunning: false,
+    };
+  }
+  return globalThis.__claudeometerIngestState;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,10 +53,11 @@ export interface SyncStatus {
 }
 
 export function getSyncStatus(): SyncStatus {
+  const state = getIngestState();
   return {
-    lastSynced: lastSyncedAt,
-    sessionCount: lastSessionCount,
-    isRunning: isCurrentlyRunning,
+    lastSynced: state.lastSyncedAt,
+    sessionCount: state.lastSessionCount,
+    isRunning: state.isCurrentlyRunning,
   };
 }
 
@@ -49,9 +66,7 @@ export function getSyncStatus(): SyncStatus {
  * @internal
  */
 export function _resetSyncStateForTesting(): void {
-  lastSyncedAt = null;
-  lastSessionCount = 0;
-  isCurrentlyRunning = false;
+  globalThis.__claudeometerIngestState = undefined;
 }
 
 /**
@@ -80,9 +95,10 @@ export function startIngestScheduler(projectsDir?: string): void {
  * @param projectsDir Optional override for testability (defaults to ~/.claude/projects)
  */
 export async function runIngestCycle(projectsDir?: string): Promise<void> {
+  const state = getIngestState();
   // Concurrency guard — skip if already running
-  if (isCurrentlyRunning) return;
-  isCurrentlyRunning = true;
+  if (state.isCurrentlyRunning) return;
+  state.isCurrentlyRunning = true;
 
   try {
     const db = getDb();
@@ -150,8 +166,8 @@ export async function runIngestCycle(projectsDir?: string): Promise<void> {
 
     if (changedFiles.length === 0) {
       // Still update sync status even if nothing changed
-      lastSyncedAt = new Date().toISOString();
-      lastSessionCount = (
+      state.lastSyncedAt = new Date().toISOString();
+      state.lastSessionCount = (
         db.prepare('SELECT COUNT(*) as count FROM sessions').get() as { count: number }
       ).count;
       return;
@@ -229,16 +245,16 @@ export async function runIngestCycle(projectsDir?: string): Promise<void> {
     recomputeAggregates(db);
 
     // Update sync status
-    lastSyncedAt = new Date().toISOString();
-    lastSessionCount = (
+    state.lastSyncedAt = new Date().toISOString();
+    state.lastSessionCount = (
       db.prepare('SELECT COUNT(*) as count FROM sessions').get() as { count: number }
     ).count;
 
     console.log(
-      `[ingest] Cycle complete: ${changedFiles.length} files processed, ${lastSessionCount} total sessions`,
+      `[ingest] Cycle complete: ${changedFiles.length} files processed, ${state.lastSessionCount} total sessions`,
     );
   } finally {
-    isCurrentlyRunning = false;
+    state.isCurrentlyRunning = false;
   }
 }
 
