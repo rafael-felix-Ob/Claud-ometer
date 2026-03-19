@@ -17,6 +17,7 @@ At a glance, know what every active Claude Code session is doing right now — n
 v1.0 delivered real-time active session detection and display. All 22 requirements satisfied. 4 phases, 9 plans completed across 23 days.
 
 Phase 5 complete — SQLite foundation with better-sqlite3 singleton, WAL mode, and 5-table schema (DB-01 through DB-05 validated).
+Phase 6 complete — Delta ingest with 2-minute scheduler, two-factor delta check, sidebar sync status (ING-01 through ING-04, UI-02 validated).
 
 ## Requirements
 
@@ -54,7 +55,7 @@ Phase 5 complete — SQLite foundation with better-sqlite3 singleton, WAL mode, 
 ### Active
 
 - [x] SQLite database schema and persistence layer — Phase 5
-- [ ] Periodic background JSONL → SQLite ingest (delta sync)
+- [x] Periodic background JSONL → SQLite ingest (delta sync) — Phase 6
 - [ ] Migrate all API routes to read from database instead of JSONL
 - [ ] Activity chart on project detail page
 - [ ] Export/import database file
@@ -79,7 +80,8 @@ Phase 5 complete — SQLite foundation with better-sqlite3 singleton, WAL mode, 
 | SQLite over cloud database | Local-first philosophy, zero config, portable .db file | ✓ Good |
 | better-sqlite3 over Drizzle/Prisma | Synchronous API, on Next.js serverExternalPackages allowlist, no webpack config | ✓ Good |
 | globalThis singleton for DB connection | Prevents hot-reload duplication in Next.js dev mode | ✓ Good |
-| Background ingest over on-demand parsing | Pages load instantly from DB; active sessions stay real-time from JSONL | — Pending |
+| Background ingest over on-demand parsing | Pages load instantly from DB; active sessions stay real-time from JSONL | ✓ Good |
+| globalThis for ingest state | Module isolation in Next.js requires shared state on globalThis, not module vars | ✓ Good |
 | DB merge over cloud sync | No accounts/auth needed; user controls when to merge | — Pending |
 
 ## Constraints
@@ -90,4 +92,4 @@ Phase 5 complete — SQLite foundation with better-sqlite3 singleton, WAL mode, 
 - **Compatibility**: Works alongside data source toggle (live vs imported)
 
 ---
-*Last updated: 2026-03-19 after Phase 5 completion*
+*Last updated: 2026-03-19 after Phase 6 completion*
