@@ -24,58 +24,59 @@ export async function GET() {
 
     archive.pipe(passthrough);
 
+    // Helper to safely add a file (skip symlinks)
+    const safeAddFile = (filePath: string, archiveName: string) => {
+      if (fs.existsSync(filePath) && !fs.lstatSync(filePath).isSymbolicLink()) {
+        archive.file(filePath, { name: archiveName });
+      }
+    };
+
     // Add stats-cache.json
-    const statsPath = path.join(claudeDir, 'stats-cache.json');
-    if (fs.existsSync(statsPath)) {
-      archive.file(statsPath, { name: 'claude-data/stats-cache.json' });
-    }
+    safeAddFile(path.join(claudeDir, 'stats-cache.json'), 'claude-data/stats-cache.json');
 
     // Add history.jsonl
-    const historyPath = path.join(claudeDir, 'history.jsonl');
-    if (fs.existsSync(historyPath)) {
-      archive.file(historyPath, { name: 'claude-data/history.jsonl' });
-    }
+    safeAddFile(path.join(claudeDir, 'history.jsonl'), 'claude-data/history.jsonl');
 
     // Add settings.json
-    const settingsPath = path.join(claudeDir, 'settings.json');
-    if (fs.existsSync(settingsPath)) {
-      archive.file(settingsPath, { name: 'claude-data/settings.json' });
-    }
+    safeAddFile(path.join(claudeDir, 'settings.json'), 'claude-data/settings.json');
 
-    // Add all project session JSONL files
+    // Add all project session JSONL files (skip symlinks to prevent data leakage)
     const projectsDir = path.join(claudeDir, 'projects');
     if (fs.existsSync(projectsDir)) {
       const projects = fs.readdirSync(projectsDir);
       for (const project of projects) {
         const projectPath = path.join(projectsDir, project);
-        if (!fs.statSync(projectPath).isDirectory()) continue;
+        const projectStat = fs.lstatSync(projectPath);
+        if (projectStat.isSymbolicLink() || !projectStat.isDirectory()) continue;
 
         const files = fs.readdirSync(projectPath);
         for (const file of files) {
           if (file.endsWith('.jsonl')) {
-            archive.file(path.join(projectPath, file), {
+            const filePath = path.join(projectPath, file);
+            if (fs.lstatSync(filePath).isSymbolicLink()) continue;
+            archive.file(filePath, {
               name: `claude-data/projects/${project}/${file}`,
             });
           }
         }
 
-        // Add memory directory if exists
+        // Add memory directory if exists (skip symlinks)
         const memoryDir = path.join(projectPath, 'memory');
-        if (fs.existsSync(memoryDir)) {
+        if (fs.existsSync(memoryDir) && !fs.lstatSync(memoryDir).isSymbolicLink()) {
           archive.directory(memoryDir, `claude-data/projects/${project}/memory`);
         }
       }
     }
 
-    // Add plans
+    // Add plans (skip symlinks)
     const plansDir = path.join(claudeDir, 'plans');
-    if (fs.existsSync(plansDir)) {
+    if (fs.existsSync(plansDir) && !fs.lstatSync(plansDir).isSymbolicLink()) {
       archive.directory(plansDir, 'claude-data/plans');
     }
 
-    // Add todos
+    // Add todos (skip symlinks)
     const todosDir = path.join(claudeDir, 'todos');
-    if (fs.existsSync(todosDir)) {
+    if (fs.existsSync(todosDir) && !fs.lstatSync(todosDir).isSymbolicLink()) {
       archive.directory(todosDir, 'claude-data/todos');
     }
 

@@ -127,6 +127,7 @@ export interface SessionInfo {
   projectName: string;
   timestamp: string;
   duration: number;
+  activeTime: number;          // ms — sum of inter-message gaps below idle threshold
   messageCount: number;
   userMessageCount: number;
   assistantMessageCount: number;
@@ -184,6 +185,7 @@ export interface ActiveSessionInfo {
   gitBranch: string;
   status: SessionStatus;
   duration: number;           // ms — current contiguous activity block
+  activeTime: number;         // ms — sum of inter-message gaps below idle threshold
   totalInputTokens: number;
   totalOutputTokens: number;
   totalCacheReadTokens: number;

@@ -5,7 +5,7 @@ import { useProjectSessions } from '@/lib/hooks';
 import { formatTokens, formatCost, formatDuration, timeAgo } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Clock, GitBranch, MessageSquare, Wrench } from 'lucide-react';
+import { ArrowLeft, Clock, GitBranch, MessageSquare, Wrench, Timer } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -139,6 +139,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       <Clock className="h-3 w-3" />
                       {formatDuration(session.duration)}
                     </span>
+                    {(session.activeTime || 0) > 0 && (
+                      <span className="flex items-center gap-1" title="Active work time (excludes idle)">
+                        <Timer className="h-3 w-3" />
+                        {formatDuration(session.activeTime)}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1">
                       <MessageSquare className="h-3 w-3" />
                       {session.messageCount} messages
