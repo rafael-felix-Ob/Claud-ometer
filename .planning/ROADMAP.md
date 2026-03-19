@@ -68,10 +68,11 @@ Plans:
   2. The /active page continues showing live session status with no change in behavior
   3. A session detail page shows the correct aggregates (tokens, cost, duration) from DB and the full conversation from JSONL
   4. The DB-backed API output matches the JSONL-backed baseline on the same dataset (correctness validation passes)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: TBD
+- [ ] 07-01-PLAN.md — Create db-queries.ts with all typed query functions + unit tests
+- [ ] 07-02-PLAN.md — Migrate 4 API routes to branch on data source, remove stats-cache machinery
 
 ### Phase 8: Portability and UI
 **Goal**: Users can move their session history across machines by exporting, importing, or merging .db files, and the project detail page shows an activity chart powered by the database
@@ -101,5 +102,5 @@ Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 | 4. Tech Debt Cleanup | v1.0 | 1/1 | Complete | 2026-03-19 |
 | 5. SQLite Foundation | v1.1 | 1/1 | Complete | 2026-03-19 |
 | 6. Delta Ingest | 2/2 | Complete   | 2026-03-19 | - |
-| 7. API Migration | v1.1 | 0/? | Not started | - |
+| 7. API Migration | v1.1 | 0/2 | Not started | - |
 | 8. Portability and UI | v1.1 | 0/? | Not started | - |
