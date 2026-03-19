@@ -3,59 +3,28 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-01-PLAN.md (tech debt cleanup, all 4 items fixed)
-last_updated: "2026-03-19T10:58:06.425Z"
+stopped_at: Completed quick task 260319-vv7 (first-sync empty state UI)
+last_updated: "2026-03-19T23:04:50.144Z"
 progress:
   total_phases: 4
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 7
+  completed_plans: 7
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-18)
+See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** At a glance, know what every active Claude Code session is doing right now
-**Current focus:** Phase 04 — tech-debt-cleanup
+**Current focus:** Phase 08 — Portability and UI
 
 ## Current Position
 
-Phase: 04 (tech-debt-cleanup) — EXECUTING
-Plan: 1 of 1
-
-## Performance Metrics
-
-**Velocity:**
-
-- Total plans completed: 0
-- Average duration: — min
-- Total execution time: 0 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: —
-- Trend: —
-
-*Updated after each plan completion*
-| Phase 01-detection-engine P01 | 13 | 3 tasks | 4 files |
-| Phase 01-detection-engine P02 | 2 | 1 tasks | 2 files |
-| Phase 01-detection-engine P03 | 5 | 2 tasks | 3 files |
-| Phase 02-active-sessions-page P01 | 3 | 3 tasks | 3 files |
-| Phase 02-active-sessions-page P02 | 5 | 1 tasks | 1 files |
-| Phase 02-active-sessions-page P03 | 15 | 2 tasks | 1 files |
-| Phase 03-gsd-integration P01 | 3 | 1 tasks | 3 files |
-| Phase 03-gsd-integration P02 | 5 | 2 tasks | 2 files |
-| Phase 03-gsd-integration P02 | 20 | 3 tasks | 2 files |
-| Phase 04-tech-debt-cleanup P04-01 | 15 | 2 tasks | 3 files |
+Phase: 08 (Portability and UI) — COMPLETE
+Plan: 2 of 2 — all plans done. Milestone v1.1 History Database COMPLETE.
 
 ## Accumulated Context
 
@@ -64,43 +33,44 @@ Plan: 1 of 1
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Pre-Phase 1]: Use tail-read (last 8KB) of JSONL files rather than full re-parse — prevents CPU spike on 5-second poll
-- [Pre-Phase 1]: Combine mtime recency + last-message-type for status inference — mtime alone misclassifies sessions during 60-120s model thinking gaps
-- [Pre-Phase 1]: GSD progress display deferred to Phase 3 — validate base detection reliability before adding derived features
-- [Phase 01-01]: Use jest testEnvironment: node (not jsdom) — Phase 1 is pure Node.js filesystem unit tests
-- [Phase 01-01]: Test file imports from non-existent active-sessions module to establish RED state — defines behavioral contract for Plan 02 TDD implementation
-- [Phase 01-02]: Export getProjectsDir from reader.ts (was private) — required for scanActiveFiles directory discovery
-- [Phase 01-02]: hasIncompleteWrite only set on last non-empty line failure — interior malformed lines silently skipped
-- [Phase 01-02]: inferSessionStatus decision tree: age > IDLE_CUTOFF_MS checked first, then WORKING_SIGNAL_MS, then incomplete write, then message type
-- [Phase 01-detection-engine]: Export extractCwdFromSession, projectIdToName, projectIdToFullPath from reader.ts for orchestrator use
-- [Phase 01-detection-engine]: getActiveSessions is async because fullParseSession uses readline streaming to avoid blocking on large files
-- [Phase 01-detection-engine]: Token cache uses full-parse-once strategy: fullParseSession on first detection, tail-read updates on subsequent polls
-- [Phase 02-01]: Return [] immediately in imported mode for active sessions — active detection only applies to live ~/.claude/ reads
-- [Phase 02-active-sessions-page]: Use inline style={{ color: getModelColor(model) }} for model badge color — avoids Tailwind v4 JIT purge of runtime-constructed color classes
-- [Phase 02-active-sessions-page]: STATUS_CONFIG object indexed by status string centralizes dot/border/badge CSS — one change point for all status visual treatment
-- [Phase 02-03]: ExpandedCardDetail is a separate component so useSessionDetail only mounts when a card is expanded — avoids conditional hook anti-pattern
-- [Phase 02-03]: useSessionDetail has no refreshInterval — expansion shows static snapshot at expand time, not a live-updating message feed
-- [Phase 02-03]: e.stopPropagation() on View full session link prevents parent card onClick from collapsing expansion on link click
-- [Phase 03-gsd-integration]: Phase status extracted from prose 'Status:' line (not frontmatter status field) — frontmatter status is milestone-level, not phase-level
-- [Phase 03-gsd-integration]: GSD_UNREADABLE constant with isGsd:true + all nulls used for Tier 2 (broken GSD) response shape
-- [Phase 03-gsd-integration]: jest.mock('fs') for readGsdProgress unit tests — enables deterministic fixture control without real filesystem reads
-- [Phase 03-gsd-integration]: GSD badge placed in flex container wrapping project name to keep name+badge together and truncate correctly
-- [Phase 03-gsd-integration]: GSD progress section added as separate CardContent block to preserve existing card layout and opacity logic
-- [Phase 03-gsd-integration]: readGsdProgress called with cwd (not projectPath) to avoid hyphen-to-slash decoding issues on Windows WSL paths
-- [Phase 04-tech-debt-cleanup]: ROADMAP Phase 1 criterion already said 30 minutes — no change needed; audit intent was correct, implementation already matched
-- [Phase 04-tech-debt-cleanup]: session.cwd rendered with font-mono truncate + title tooltip in active card CardHeader (DISP-03 complete)
+- [v1.1 arch]: better-sqlite3 over drizzle/Prisma — synchronous API, on Next.js serverExternalPackages allowlist, no webpack config needed
+- [v1.1 arch]: DB file at ~/.claude/claud-ometer.db (Linux ext4) — NTFS WAL mode produces SQLITE_IOERR_LOCK, confirmed WSL2 known issue
+- [v1.1 arch]: globalThis singleton for DB connection and ingest scheduler — prevents hot-reload duplication
+- [v1.1 arch]: instrumentation.ts for scheduler startup — Next.js official single-startup hook
+- [v1.1 arch]: Two-path data access — historical pages use SQLite, active sessions stay on live JSONL
+- [v1.1 arch]: reader.ts must NOT be modified — active sessions depend on it
+- [v1.1 arch]: ON CONFLICT DO UPDATE WHERE message_count for merge — INSERT OR IGNORE freezes incomplete sessions
+- [Phase 06-delta-ingest]: runIngestCycle always reads live ~/.claude/projects, not getProjectsDir() — ingest operates on live data regardless of UI data source toggle
+- [Phase 06-delta-ingest]: recomputeAggregates uses DELETE+INSERT per cycle for full consistency over UPSERT approach
+- [Phase 06-delta-ingest]: SyncStatus interface defined in hooks.ts (not imported from ingest.ts) to keep client/server boundary clean
+- [Phase 06-delta-ingest]: ingest sync state moved to globalThis to survive Next.js module isolation between instrumentation.ts and API route handlers
+- [Phase 07-api-migration]: getProjectsFromDb() reads sessions.model (raw IDs) and applies getModelDisplayName() — projects.models column is always '[]' from ingest
+- [Phase 07-api-migration]: dailyActivity in getDashboardStatsFromDb uses GROUP BY date (not date+project_id) for one entry per calendar date
+- [Phase 07-api-migration]: getSessionDetailFromDb returns DB aggregates with empty messages[] when JSONL missing (null only when session row absent from DB)
+- [Phase 07-02]: getDashboardStats() in reader.ts rewritten for imported mode — full JSONL scan, no stats-cache dependency; StatsCache type and supplemental stats machinery removed
+- [Phase 08-01]: ATTACH DATABASE merge SQL qualifies JOIN with main.sessions to avoid "ambiguous column name" SQLite error
+- [Phase 08-01]: DB replace order: stopIngestScheduler -> close DB -> delete WAL/SHM -> write file -> createDb -> startIngestScheduler
+- [Phase 08-01]: getProjectActivityFromDb is synchronous (better-sqlite3 synchronous API); test dates use Date.now() offsets to survive 30-day window filter
+- [Phase 08-02]: ZIP-to-SQLite bridge uses /api/ingest POST route (new) — client component boundary requires server route
+- [Phase 08-02]: Ingest route passes path.join(getImportDir(), 'claude-data', 'projects') per Pitfall 6 — not getImportDir() directly
 
 ### Pending Todos
 
 None yet.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260319-vv7 | Add first-sync empty state UI | 2026-03-19 | 4656c9d | [260319-vv7-add-first-sync-empty-state-ui-sidebar-sh](./quick/260319-vv7-add-first-sync-empty-state-ui-sidebar-sh/) |
+
 ### Blockers/Concerns
 
-- WSL mtime precision: Windows-hosted files have 1-2s mtime granularity; threshold comparisons may need >10s margins. Verify during Phase 1 implementation.
-- Token count semantics: tail-read yields tokens from last N messages, not full session total. Validate label "recent tokens" before Phase 2 ships.
+- [Phase 5 RESOLVED]: daily_activity table includes project_id as part of composite PK — confirmed correct for Phase 8 activity chart
+- [Phase 5 RESOLVED]: instrumentation.ts confirmed as the startup hook — module-level import approach not used
 
 ## Session Continuity
 
-Last session: 2026-03-19T10:35:03.591Z
-Stopped at: Completed 04-01-PLAN.md (tech debt cleanup, all 4 items fixed)
+Last session: 2026-03-19T23:04:50.116Z
+Stopped at: Completed quick task 260319-vv7 (first-sync empty state UI)
 Resume file: None

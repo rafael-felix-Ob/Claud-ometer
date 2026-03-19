@@ -5,7 +5,6 @@ import readline from 'readline';
 import { calculateCost, getModelDisplayName } from '@/config/pricing';
 import { getActiveDataSource, getImportDir } from './data-source';
 import type {
-  StatsCache,
   HistoryEntry,
   ProjectInfo,
   SessionInfo,
@@ -50,11 +49,6 @@ export function getProjectsDir(): string {
   return path.join(getClaudeDir(), 'projects');
 }
 
-export function getStatsCache(): StatsCache | null {
-  const statsPath = path.join(getClaudeDir(), 'stats-cache.json');
-  if (!fs.existsSync(statsPath)) return null;
-  return JSON.parse(fs.readFileSync(statsPath, 'utf-8'));
-}
 
 export function getHistory(): HistoryEntry[] {
   const historyPath = path.join(getClaudeDir(), 'history.jsonl');
@@ -66,13 +60,30 @@ export function getHistory(): HistoryEntry[] {
 }
 
 export function projectIdToName(id: string): string {
-  const decoded = id.replace(/^-/, '/').replace(/-/g, '/');
-  const parts = decoded.split('/');
-  return parts[parts.length - 1] || id;
+  // Project IDs encode paths as hyphen-separated segments (e.g., -mnt-c-Git-my-project)
+  // This is lossy — hyphens in folder names (Claud-ometer) become indistinguishable from separators.
+  // Return the raw ID as fallback; callers should prefer cwd-based names when available.
+  return id;
 }
 
 export function projectIdToFullPath(id: string): string {
+  // Lossy: hyphens in folder names become path separators. Best-effort only.
   return id.replace(/^-/, '/').replace(/-/g, '/');
+}
+
+/**
+ * Scans JSONL files in a project directory to find the actual cwd.
+ * Tries multiple files since the first may lack a cwd field.
+ */
+export function findProjectCwd(projectPath: string): string | null {
+  try {
+    const jsonlFiles = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
+    for (const file of jsonlFiles) {
+      const cwd = extractCwdFromSession(path.join(projectPath, file));
+      if (cwd) return cwd;
+    }
+  } catch { /* skip */ }
+  return null;
 }
 
 export function extractCwdFromSession(filePath: string): string | null {
@@ -95,11 +106,8 @@ export function extractCwdFromSession(filePath: string): string | null {
 }
 
 function getProjectNameFromDir(projectPath: string, projectId: string): { name: string; fullPath: string } {
-  const jsonlFiles = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
-  if (jsonlFiles.length > 0) {
-    const cwd = extractCwdFromSession(path.join(projectPath, jsonlFiles[0]));
-    if (cwd) return { name: path.basename(cwd), fullPath: cwd };
-  }
+  const cwd = findProjectCwd(projectPath);
+  if (cwd) return { name: path.basename(cwd), fullPath: cwd };
   return { name: projectIdToName(projectId), fullPath: projectIdToFullPath(projectId) };
 }
 
@@ -203,7 +211,7 @@ export async function getSessions(limit = 50, offset = 0): Promise<SessionInfo[]
   return allSessions.slice(offset, offset + limit);
 }
 
-async function parseSessionFile(filePath: string, projectId: string, projectName: string): Promise<SessionInfo> {
+export async function parseSessionFile(filePath: string, projectId: string, projectName: string): Promise<SessionInfo> {
   const sessionId = path.basename(filePath, '.jsonl');
 
   let firstTimestamp = '';
@@ -481,295 +489,194 @@ export async function searchSessions(query: string, limit = 50): Promise<Session
   return matchingSessions.slice(0, limit);
 }
 
-// --- Supplemental stats: bridge stale stats-cache.json with fresh JSONL data ---
-
-interface SupplementalStats {
-  dailyActivity: DailyActivity[];
-  dailyModelTokens: DailyModelTokens[];
-  modelUsage: Record<string, { inputTokens: number; outputTokens: number; cacheReadInputTokens: number; cacheCreationInputTokens: number }>;
-  hourCounts: Record<string, number>;
-  totalSessions: number;
-  totalMessages: number;
-  totalTokens: number;
-  estimatedCost: number;
-}
-
-let supplementalCache: { key: string; data: SupplementalStats; ts: number } | null = null;
-const SUPPLEMENTAL_TTL_MS = 30_000;
-
-function getRecentSessionFiles(afterDate: string): string[] {
+export async function getDashboardStats(): Promise<DashboardStats> {
+  // Imported mode: scan all JSONL files directly (no stats-cache dependency).
+  // Performance is acceptable for imported datasets (typically smaller).
   const projectsDir = getProjectsDir();
-  if (!fs.existsSync(projectsDir)) return [];
-
-  const cutoff = afterDate ? new Date(afterDate + 'T23:59:59Z').getTime() : 0;
-  const files: string[] = [];
-
-  for (const entry of fs.readdirSync(projectsDir)) {
-    const projectPath = path.join(projectsDir, entry);
-    if (!fs.statSync(projectPath).isDirectory()) continue;
-
-    for (const f of fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'))) {
-      const filePath = path.join(projectPath, f);
-      if (fs.statSync(filePath).mtimeMs > cutoff) {
-        files.push(filePath);
-      }
-    }
+  if (!fs.existsSync(projectsDir)) {
+    return {
+      totalSessions: 0,
+      totalMessages: 0,
+      totalTokens: 0,
+      estimatedCost: 0,
+      dailyActivity: [],
+      dailyModelTokens: [],
+      modelUsage: {},
+      hourCounts: {},
+      firstSessionDate: '',
+      longestSession: { sessionId: '', duration: 0, messageCount: 0, timestamp: '' },
+      projectCount: 0,
+      recentSessions: [],
+    };
   }
 
-  return files;
-}
-
-async function computeSupplementalStats(afterDate: string): Promise<SupplementalStats> {
-  const cacheKey = afterDate + ':' + getActiveDataSource();
-  if (supplementalCache && supplementalCache.key === cacheKey && Date.now() - supplementalCache.ts < SUPPLEMENTAL_TTL_MS) {
-    return supplementalCache.data;
-  }
-
-  const files = getRecentSessionFiles(afterDate);
+  const projectEntries = fs.readdirSync(projectsDir);
 
   const dailyMap = new Map<string, DailyActivity>();
   const dailyModelMap = new Map<string, Record<string, number>>();
-  const modelUsage: SupplementalStats['modelUsage'] = {};
+  const modelUsageMap: Record<string, DashboardStats['modelUsage'][string]> = {};
   const hourCounts: Record<string, number> = {};
-  let totalSessions = 0;
+
   let totalMessages = 0;
   let totalTokens = 0;
   let estimatedCost = 0;
+  let firstSessionDate = '';
+  let longestSession = { sessionId: '', duration: 0, messageCount: 0, timestamp: '' };
+  let totalSessions = 0;
 
-  for (const filePath of files) {
-    let firstTimestamp = '';
-    let sessionCounted = false;
-    let firstQualifyingDate = '';
+  for (const entry of projectEntries) {
+    const projectPath = path.join(projectsDir, entry);
+    try {
+      if (!fs.statSync(projectPath).isDirectory()) continue;
+    } catch { continue; }
 
-    await forEachJsonlLine(filePath, (msg) => {
-      if (!msg.timestamp) return;
+    const jsonlFiles = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
 
-      if (!firstTimestamp) firstTimestamp = msg.timestamp;
+    for (const file of jsonlFiles) {
+      const filePath = path.join(projectPath, file);
+      const sessionId = path.basename(file, '.jsonl');
+      totalSessions++;
 
-      const msgDate = msg.timestamp.slice(0, 10);
+      let firstTimestamp = '';
+      let lastTimestamp = '';
+      let sessionMessages = 0;
+      let sessionTokens = 0;
 
-      // Only count messages strictly after the cache boundary day
-      if (afterDate && msgDate <= afterDate) return;
+      await forEachJsonlLine(filePath, (msg) => {
+        if (!msg.timestamp) return;
 
-      // Count session once based on first qualifying message
-      if (!sessionCounted) {
-        totalSessions++;
-        sessionCounted = true;
-        firstQualifyingDate = msgDate;
-      }
+        if (!firstTimestamp) {
+          firstTimestamp = msg.timestamp;
+          if (!firstSessionDate || msg.timestamp < firstSessionDate) {
+            firstSessionDate = msg.timestamp.slice(0, 10);
+          }
+        }
+        lastTimestamp = msg.timestamp;
 
-      const hour = msg.timestamp.slice(11, 13);
+        const msgDate = msg.timestamp.slice(0, 10);
+        const hour = msg.timestamp.slice(11, 13);
 
-      if (msg.type === 'user' || msg.type === 'assistant') {
-        totalMessages++;
+        if (msg.type === 'user' || msg.type === 'assistant') {
+          totalMessages++;
+          sessionMessages++;
 
-        // dailyActivity
-        let day = dailyMap.get(msgDate);
+          let day = dailyMap.get(msgDate);
+          if (!day) {
+            day = { date: msgDate, messageCount: 0, sessionCount: 0, toolCallCount: 0 };
+            dailyMap.set(msgDate, day);
+          }
+          day.messageCount++;
+        }
+
+        if (msg.type === 'assistant') {
+          const model = msg.message?.model || '';
+          const usage = msg.message?.usage;
+
+          if (usage) {
+            const input = usage.input_tokens || 0;
+            const output = usage.output_tokens || 0;
+            const cacheRead = usage.cache_read_input_tokens || 0;
+            const cacheWrite = usage.cache_creation_input_tokens || 0;
+            const tokens = input + output + cacheRead + cacheWrite;
+            totalTokens += tokens;
+            sessionTokens += tokens;
+
+            const cost = calculateCost(model, input, output, cacheWrite, cacheRead);
+            estimatedCost += cost;
+
+            if (model) {
+              if (!modelUsageMap[model]) {
+                modelUsageMap[model] = {
+                  inputTokens: 0,
+                  outputTokens: 0,
+                  cacheReadInputTokens: 0,
+                  cacheCreationInputTokens: 0,
+                  costUSD: 0,
+                  contextWindow: 0,
+                  maxOutputTokens: 0,
+                  webSearchRequests: 0,
+                  estimatedCost: 0,
+                };
+              }
+              modelUsageMap[model].inputTokens += input;
+              modelUsageMap[model].outputTokens += output;
+              modelUsageMap[model].cacheReadInputTokens += cacheRead;
+              modelUsageMap[model].cacheCreationInputTokens += cacheWrite;
+              modelUsageMap[model].estimatedCost += cost;
+
+              let dayModel = dailyModelMap.get(msgDate);
+              if (!dayModel) {
+                dayModel = {};
+                dailyModelMap.set(msgDate, dayModel);
+              }
+              dayModel[model] = (dayModel[model] || 0) + tokens;
+
+              hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+            }
+          }
+
+          // Tool calls
+          const content = msg.message?.content;
+          if (Array.isArray(content)) {
+            let toolCallCount = 0;
+            for (const c of content) {
+              if (c && typeof c === 'object' && 'type' in c && c.type === 'tool_use') {
+                toolCallCount++;
+              }
+            }
+            if (toolCallCount > 0) {
+              const day = dailyMap.get(msgDate);
+              if (day) day.toolCallCount += toolCallCount;
+            }
+          }
+        }
+      });
+
+      // Count session in dailyActivity for the day of its first message
+      if (firstTimestamp) {
+        const sessionDate = firstTimestamp.slice(0, 10);
+        let day = dailyMap.get(sessionDate);
         if (!day) {
-          day = { date: msgDate, messageCount: 0, sessionCount: 0, toolCallCount: 0 };
-          dailyMap.set(msgDate, day);
+          day = { date: sessionDate, messageCount: 0, sessionCount: 0, toolCallCount: 0 };
+          dailyMap.set(sessionDate, day);
         }
-        day.messageCount++;
-      }
+        day.sessionCount++;
 
-      if (msg.type === 'assistant') {
-        const model = msg.message?.model || '';
-        const usage = msg.message?.usage;
-
-        if (usage) {
-          const input = usage.input_tokens || 0;
-          const output = usage.output_tokens || 0;
-          const cacheRead = usage.cache_read_input_tokens || 0;
-          const cacheWrite = usage.cache_creation_input_tokens || 0;
-          const tokens = input + output + cacheRead + cacheWrite;
-          totalTokens += tokens;
-
-          const cost = calculateCost(model, input, output, cacheWrite, cacheRead);
-          estimatedCost += cost;
-
-          // modelUsage
-          if (model) {
-            if (!modelUsage[model]) {
-              modelUsage[model] = { inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 };
-            }
-            modelUsage[model].inputTokens += input;
-            modelUsage[model].outputTokens += output;
-            modelUsage[model].cacheReadInputTokens += cacheRead;
-            modelUsage[model].cacheCreationInputTokens += cacheWrite;
-          }
-
-          // dailyModelTokens
-          if (model) {
-            let dayModel = dailyModelMap.get(msgDate);
-            if (!dayModel) {
-              dayModel = {};
-              dailyModelMap.set(msgDate, dayModel);
-            }
-            dayModel[model] = (dayModel[model] || 0) + tokens;
-          }
-
-          // hourCounts
-          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-        }
-
-        // tool calls
-        const content = msg.message?.content;
-        if (Array.isArray(content)) {
-          let toolCalls = 0;
-          for (const c of content) {
-            if (c && typeof c === 'object' && 'type' in c && c.type === 'tool_use') {
-              toolCalls++;
-            }
-          }
-          if (toolCalls > 0) {
-            const day = dailyMap.get(msgDate);
-            if (day) day.toolCallCount += toolCalls;
-          }
+        // Track longest session
+        const duration = lastTimestamp
+          ? new Date(lastTimestamp).getTime() - new Date(firstTimestamp).getTime()
+          : 0;
+        if (duration > longestSession.duration) {
+          longestSession = {
+            sessionId,
+            duration,
+            messageCount: sessionMessages,
+            timestamp: firstTimestamp,
+          };
         }
       }
-    });
-
-    // Track session count per day (based on first qualifying message)
-    if (sessionCounted && firstQualifyingDate) {
-      const day = dailyMap.get(firstQualifyingDate);
-      if (day) day.sessionCount++;
     }
   }
+
+  const projects = await getProjects();
+  const recentSessions = await getSessions(10);
 
   const dailyActivity = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   const dailyModelTokens: DailyModelTokens[] = Array.from(dailyModelMap.entries())
     .map(([date, tokensByModel]) => ({ date, tokensByModel }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const result: SupplementalStats = {
-    dailyActivity,
-    dailyModelTokens,
-    modelUsage,
-    hourCounts,
+  return {
     totalSessions,
     totalMessages,
     totalTokens,
     estimatedCost,
-  };
-
-  supplementalCache = { key: cacheKey, data: result, ts: Date.now() };
-  return result;
-}
-
-export async function getDashboardStats(): Promise<DashboardStats> {
-  const stats = getStatsCache();
-  const projects = await getProjects();
-  const afterDate = stats?.lastComputedDate || '';
-
-  // Compute supplemental stats from JSONL files modified after the cache date
-  const supplemental = await computeSupplementalStats(afterDate);
-
-  // --- Base stats from cache ---
-  let totalTokens = 0;
-  let estimatedCost = 0;
-  const modelUsageWithCost: Record<string, DashboardStats['modelUsage'][string]> = {};
-
-  if (stats?.modelUsage) {
-    for (const [model, usage] of Object.entries(stats.modelUsage)) {
-      const cost = calculateCost(
-        model,
-        usage.inputTokens,
-        usage.outputTokens,
-        usage.cacheCreationInputTokens,
-        usage.cacheReadInputTokens
-      );
-      const tokens = usage.inputTokens + usage.outputTokens + usage.cacheReadInputTokens + usage.cacheCreationInputTokens;
-      totalTokens += tokens;
-      estimatedCost += cost;
-      modelUsageWithCost[model] = { ...usage, estimatedCost: cost };
-    }
-  }
-
-  // --- Merge supplemental model usage ---
-  for (const [model, usage] of Object.entries(supplemental.modelUsage)) {
-    const cost = calculateCost(model, usage.inputTokens, usage.outputTokens, usage.cacheCreationInputTokens, usage.cacheReadInputTokens);
-    totalTokens += usage.inputTokens + usage.outputTokens + usage.cacheReadInputTokens + usage.cacheCreationInputTokens;
-    estimatedCost += cost;
-    if (modelUsageWithCost[model]) {
-      modelUsageWithCost[model].inputTokens += usage.inputTokens;
-      modelUsageWithCost[model].outputTokens += usage.outputTokens;
-      modelUsageWithCost[model].cacheReadInputTokens += usage.cacheReadInputTokens;
-      modelUsageWithCost[model].cacheCreationInputTokens += usage.cacheCreationInputTokens;
-      modelUsageWithCost[model].estimatedCost += cost;
-    } else {
-      modelUsageWithCost[model] = {
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        cacheReadInputTokens: usage.cacheReadInputTokens,
-        cacheCreationInputTokens: usage.cacheCreationInputTokens,
-        costUSD: 0,
-        contextWindow: 0,
-        maxOutputTokens: 0,
-        webSearchRequests: 0,
-        estimatedCost: cost,
-      };
-    }
-  }
-
-  // --- Merge dailyActivity ---
-  const dailyActivityMap = new Map<string, DailyActivity>();
-  for (const d of (stats?.dailyActivity || [])) {
-    dailyActivityMap.set(d.date, { ...d });
-  }
-  for (const d of supplemental.dailyActivity) {
-    const existing = dailyActivityMap.get(d.date);
-    if (existing) {
-      existing.messageCount += d.messageCount;
-      existing.sessionCount += d.sessionCount;
-      existing.toolCallCount += d.toolCallCount;
-    } else {
-      dailyActivityMap.set(d.date, { ...d });
-    }
-  }
-  const mergedDailyActivity = Array.from(dailyActivityMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-
-  // --- Merge dailyModelTokens ---
-  const dailyModelMap = new Map<string, Record<string, number>>();
-  for (const d of (stats?.dailyModelTokens || [])) {
-    dailyModelMap.set(d.date, { ...d.tokensByModel });
-  }
-  for (const d of supplemental.dailyModelTokens) {
-    const existing = dailyModelMap.get(d.date);
-    if (existing) {
-      for (const [model, tokens] of Object.entries(d.tokensByModel)) {
-        existing[model] = (existing[model] || 0) + tokens;
-      }
-    } else {
-      dailyModelMap.set(d.date, { ...d.tokensByModel });
-    }
-  }
-  const mergedDailyModelTokens = Array.from(dailyModelMap.entries())
-    .map(([date, tokensByModel]) => ({ date, tokensByModel }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  // --- Merge hourCounts ---
-  const mergedHourCounts = { ...(stats?.hourCounts || {}) };
-  for (const [hour, count] of Object.entries(supplemental.hourCounts)) {
-    mergedHourCounts[hour] = (mergedHourCounts[hour] || 0) + count;
-  }
-
-  const recentSessions = await getSessions(10);
-
-  // Use project-level totals for cost/tokens to stay consistent with the Projects page
-  const projectTotalCost = projects.reduce((sum, p) => sum + p.estimatedCost, 0);
-  const projectTotalTokens = projects.reduce((sum, p) => sum + p.totalTokens, 0);
-
-  return {
-    totalSessions: (stats?.totalSessions || 0) + supplemental.totalSessions,
-    totalMessages: (stats?.totalMessages || 0) + supplemental.totalMessages,
-    totalTokens: projectTotalTokens || totalTokens,
-    estimatedCost: projectTotalCost || estimatedCost,
-    dailyActivity: mergedDailyActivity,
-    dailyModelTokens: mergedDailyModelTokens,
-    modelUsage: modelUsageWithCost,
-    hourCounts: mergedHourCounts,
-    firstSessionDate: stats?.firstSessionDate || '',
-    longestSession: stats?.longestSession || { sessionId: '', duration: 0, messageCount: 0, timestamp: '' },
+    dailyActivity,
+    dailyModelTokens,
+    modelUsage: modelUsageMap,
+    hourCounts,
+    firstSessionDate,
+    longestSession,
     projectCount: projects.length,
     recentSessions,
   };

@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSessions } from '@/lib/hooks';
 import { formatCost, formatDuration, timeAgo, formatTokens } from '@/lib/format';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, GitBranch, MessageSquare, FolderKanban, Minimize2, Search, X, Timer } from 'lucide-react';
+import { Clock, GitBranch, MessageSquare, FolderKanban, Minimize2, Search, X, Timer, ChevronDown, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { FirstSyncBanner } from '@/components/first-sync-banner';
+
+const PAGE_SIZE = 15;
 
 function useDebounce(value: string, delay: number) {
   const [debounced, setDebounced] = useState(value);
@@ -36,21 +39,24 @@ export default function SessionsPage() {
 function SessionsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const initialQuery = searchParams.get('q') || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const debouncedQuery = useDebounce(searchQuery, 300);
-  const { data: sessions, isLoading } = useSessions(100, 0, debouncedQuery);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // Sync debounced query to URL
+  // Fetch all matching sessions (DB query is fast), display incrementally
+  const { data: sessions, isLoading } = useSessions(200, 0, debouncedQuery);
+
+  // Sync debounced query to URL (only when query actually changes)
+  const syncUrl = useCallback((q: string) => {
+    const url = q ? `/sessions?q=${encodeURIComponent(q)}` : '/sessions';
+    router.replace(url, { scroll: false });
+  }, [router]);
+
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (debouncedQuery) {
-      params.set('q', debouncedQuery);
-    } else {
-      params.delete('q');
-    }
-    const qs = params.toString();
-    router.replace(qs ? `/sessions?${qs}` : '/sessions', { scroll: false });
-  }, [debouncedQuery, router, searchParams]);
+    syncUrl(debouncedQuery);
+    setVisibleCount(PAGE_SIZE); // Reset pagination on new search
+  }, [debouncedQuery, syncUrl]);
 
   if (isLoading || !sessions) {
     return (
@@ -63,6 +69,9 @@ function SessionsContent() {
     );
   }
 
+  const visibleSessions = sessions.slice(0, visibleCount);
+  const hasMore = visibleCount < sessions.length;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -74,6 +83,8 @@ function SessionsContent() {
           </p>
         </div>
       </div>
+
+      <FirstSyncBanner />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -100,9 +111,9 @@ function SessionsContent() {
             {sessions.length === 0 ? (
               <div className="px-5 py-12 text-center">
                 <Search className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                <p className="mt-3 text-sm text-muted-foreground">No sessions found matching &quot;{debouncedQuery}&quot;</p>
+                <p className="mt-3 text-sm text-muted-foreground">No sessions found{debouncedQuery && ` matching "${debouncedQuery}"`}</p>
               </div>
-            ) : sessions.map(session => (
+            ) : visibleSessions.map(session => (
               <Link
                 key={session.id}
                 href={`/sessions/${session.id}`}
@@ -160,6 +171,16 @@ function SessionsContent() {
           </div>
         </CardContent>
       </Card>
+
+      {hasMore && (
+        <button
+          onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <ChevronDown className="h-4 w-4" />
+          Load more ({sessions.length - visibleCount} remaining)
+        </button>
+      )}
     </div>
   );
 }

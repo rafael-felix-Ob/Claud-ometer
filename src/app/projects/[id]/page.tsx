@@ -1,8 +1,9 @@
 'use client';
 
 import { use } from 'react';
-import { useProjectSessions } from '@/lib/hooks';
+import { useProjectSessions, useProjectActivity } from '@/lib/hooks';
 import { formatTokens, formatCost, formatDuration, timeAgo } from '@/lib/format';
+import { ProjectActivityChart } from '@/components/charts/project-activity-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Clock, GitBranch, MessageSquare, Wrench, Timer } from 'lucide-react';
@@ -12,8 +13,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const projectId = decodeURIComponent(id);
   const { data: sessions, isLoading } = useProjectSessions(projectId);
+  const { data: activity } = useProjectActivity(projectId);
 
-  const projectName = projectId.split('-').pop() || projectId;
+  // Derive name from first session's projectName (populated from cwd basename by ingest)
+  const projectName = sessions?.[0]?.projectName || projectId;
 
   if (isLoading || !sessions) {
     return (
@@ -82,6 +85,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
       </div>
+
+      {/* Activity Chart */}
+      <ProjectActivityChart data={activity || []} />
 
       {topTools.length > 0 && (
         <Card className="border-border/50 shadow-sm">

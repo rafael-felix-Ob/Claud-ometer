@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import type { DashboardStats, ProjectInfo, SessionInfo, SessionDetail, ActiveSessionInfo } from '@/lib/claude-data/types';
+import type { DashboardStats, ProjectInfo, SessionInfo, SessionDetail, ActiveSessionInfo, DailyActivity } from '@/lib/claude-data/types';
 
 const fetcher = (url: string) => fetch(url).then(r => {
   if (!r.ok) throw new Error(`API error: ${r.status}`);
@@ -33,4 +33,23 @@ export function useActiveSessions() {
   return useSWR<ActiveSessionInfo[]>('/api/active-sessions', fetcher, {
     refreshInterval: 5000,
   });
+}
+
+export interface SyncStatus {
+  lastSynced: string | null;
+  sessionCount: number;
+  isRunning: boolean;
+}
+
+export function useSyncStatus() {
+  return useSWR<SyncStatus>('/api/sync-status', fetcher, {
+    refreshInterval: 5000,
+  });
+}
+
+export function useProjectActivity(projectId: string) {
+  return useSWR<DailyActivity[]>(
+    projectId ? `/api/projects/${encodeURIComponent(projectId)}/activity` : null,
+    fetcher,
+  );
 }

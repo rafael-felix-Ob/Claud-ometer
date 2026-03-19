@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FolderKanban, MessageSquare, Clock, Layers } from 'lucide-react';
 import Link from 'next/link';
+import { FirstSyncBanner } from '@/components/first-sync-banner';
 
 export default function ProjectsPage() {
   const { data: projects, isLoading } = useProjects();
@@ -27,6 +28,8 @@ export default function ProjectsPage() {
         <h1 className="text-xl font-bold tracking-tight">Projects</h1>
         <p className="text-sm text-muted-foreground">{projects.length} projects tracked</p>
       </div>
+
+      <FirstSyncBanner />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {projects.map(project => (

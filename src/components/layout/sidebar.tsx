@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import useSWR from 'swr';
+import { formatDistanceToNow } from 'date-fns';
+import { useSyncStatus } from '@/lib/hooks';
 import {
   LayoutDashboard,
   Activity,
@@ -29,6 +31,7 @@ const fetcher = (url: string) => fetch(url).then(r => r.json());
 export function Sidebar() {
   const pathname = usePathname();
   const { data: sourceInfo } = useSWR('/api/data-source', fetcher, { refreshInterval: 5000 });
+  const { data: syncStatus } = useSyncStatus();
 
   const isImported = sourceInfo?.active === 'imported';
 
@@ -76,9 +79,26 @@ export function Sidebar() {
               {sourceInfo?.importMeta?.exportedFrom || 'snapshot'}
             </p>
           </div>
+        ) : syncStatus?.lastSynced ? (
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-muted-foreground">
+              Synced {formatDistanceToNow(new Date(syncStatus.lastSynced), { addSuffix: true })}
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {syncStatus.sessionCount.toLocaleString()} sessions in DB
+            </p>
+          </div>
+        ) : syncStatus?.isRunning && syncStatus?.sessionCount === 0 ? (
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary flex-shrink-0" />
+              <p className="text-[10px] text-muted-foreground">Initial sync in progress...</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground pl-3">Scanning ~/.claude/</p>
+          </div>
         ) : (
           <p className="text-[10px] text-muted-foreground">
-            Reading from ~/.claude/
+            {syncStatus?.isRunning ? 'Syncing...' : 'Reading from ~/.claude/'}
           </p>
         )}
       </div>
