@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatTokens, formatCost, formatDuration, timeAgo } from '@/lib/format';
 import { getModelDisplayName, getModelColor } from '@/config/pricing';
-import { Activity, GitBranch, Zap, AlertTriangle, Layers, ExternalLink } from 'lucide-react';
+import { Activity, GitBranch, Zap, AlertTriangle, Layers, ExternalLink, Timer } from 'lucide-react';
 import type { ActiveSessionInfo } from '@/lib/claude-data/types';
 
 const STATUS_ORDER: Record<string, number> = { working: 0, waiting: 1, idle: 2 };
@@ -212,8 +212,21 @@ export default function ActiveSessionsPage() {
                       {config.label}
                     </Badge>
                   </div>
+                  {session.cwd && (
+                    <p className="text-xs text-muted-foreground font-mono truncate max-w-[200px]" title={session.cwd}>
+                      {session.cwd}
+                    </p>
+                  )}
                   <div className="flex items-center justify-between">
-                    <span className="text-xl font-semibold">{formatDuration(session.duration)}</span>
+                    <div>
+                      <span className="text-xl font-semibold">{formatDuration(session.duration)}</span>
+                      {(session.activeTime || 0) > 0 && (
+                        <span className="ml-2 text-xs text-muted-foreground" title="Active work time (excludes idle)">
+                          <Timer className="h-3 w-3 inline mr-0.5 -mt-px" />
+                          {formatDuration(session.activeTime)}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-muted-foreground">Active {timeAgo(session.lastActivity)}</span>
                   </div>
                 </CardHeader>

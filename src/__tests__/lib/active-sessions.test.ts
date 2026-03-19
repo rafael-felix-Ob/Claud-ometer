@@ -483,7 +483,7 @@ describe('getActiveSessions', () => {
     const result = await getActiveSessions();
 
     expect(result).toHaveLength(1);
-    expect(result[0].projectName).toBe(`Project ${projectId}`);
+    expect(result[0].projectName).toBe('project');
     expect(result[0].projectPath).toBe(`/home/user/${projectId}`);
     expect(result[0].cwd).toBe('/home/user/project');
     expect(result[0].gitBranch).toBe('feature/test');
