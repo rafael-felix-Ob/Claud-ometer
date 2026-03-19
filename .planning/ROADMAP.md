@@ -38,10 +38,10 @@
   3. Hot-reloading the dev server does not produce "database is locked" errors
   4. `next build` completes without native-module bundling errors for `better-sqlite3`
   5. The schema tables (`sessions`, `projects`, `daily_activity`, `model_usage`, `ingested_files`) exist and are queryable after first startup
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md — Install better-sqlite3, create db.ts singleton with 5-table schema, verify build
 
 ### Phase 6: Delta Ingest
 **Goal**: A background job that populates the database from JSONL files on startup and every 2 minutes, skipping unchanged files via two-factor delta check, with sync status visible in the sidebar
@@ -90,7 +90,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in strict dependency order: 5 → 6 → 7 → 8
+Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -98,7 +98,7 @@ Phases execute in strict dependency order: 5 → 6 → 7 → 8
 | 2. Active Sessions Page | v1.0 | 3/3 | Complete | 2026-03-18 |
 | 3. GSD Integration | v1.0 | 2/2 | Complete | 2026-03-18 |
 | 4. Tech Debt Cleanup | v1.0 | 1/1 | Complete | 2026-03-19 |
-| 5. SQLite Foundation | v1.1 | 0/? | Not started | - |
+| 5. SQLite Foundation | v1.1 | 0/1 | Planning | - |
 | 6. Delta Ingest | v1.1 | 0/? | Not started | - |
 | 7. API Migration | v1.1 | 0/? | Not started | - |
 | 8. Portability and UI | v1.1 | 0/? | Not started | - |
