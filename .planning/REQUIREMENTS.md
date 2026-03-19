@@ -24,9 +24,9 @@ Requirements for the history database milestone. Each maps to roadmap phases.
 
 ### API Migration
 
-- [ ] **API-01**: Overview, sessions list, projects, and costs pages read from SQLite instead of JSONL
+- [x] **API-01**: Overview, sessions list, projects, and costs pages read from SQLite instead of JSONL
 - [ ] **API-02**: Active sessions page continues reading from live JSONL files (not database)
-- [ ] **API-03**: Session detail page gets aggregates from DB and messages from JSONL (hybrid)
+- [x] **API-03**: Session detail page gets aggregates from DB and messages from JSONL (hybrid)
 
 ### Portability
 
@@ -81,9 +81,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ING-02 | Phase 6 | Complete |
 | ING-03 | Phase 6 | Complete |
 | ING-04 | Phase 6 | Complete |
-| API-01 | Phase 7 | Pending |
+| API-01 | Phase 7 | Complete |
 | API-02 | Phase 7 | Pending |
-| API-03 | Phase 7 | Pending |
+| API-03 | Phase 7 | Complete |
 | PORT-01 | Phase 8 | Pending |
 | PORT-02 | Phase 8 | Pending |
 | PORT-03 | Phase 8 | Pending |

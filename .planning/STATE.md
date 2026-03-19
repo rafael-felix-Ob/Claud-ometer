@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: History Database
-status: unknown
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-19T16:38:39.130Z"
+status: executing
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-19T17:16:35Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** At a glance, know what every active Claude Code session is doing right now
-**Current focus:** Phase 06 — Delta Ingest
+**Current focus:** Phase 07 — API Migration
 
 ## Current Position
 
-Phase: 06 (Delta Ingest) — EXECUTING
+Phase: 07 (API Migration) — EXECUTING
 Plan: 2 of 2
 
 ## Accumulated Context
@@ -44,6 +44,9 @@ Recent decisions affecting current work:
 - [Phase 06-delta-ingest]: recomputeAggregates uses DELETE+INSERT per cycle for full consistency over UPSERT approach
 - [Phase 06-delta-ingest]: SyncStatus interface defined in hooks.ts (not imported from ingest.ts) to keep client/server boundary clean
 - [Phase 06-delta-ingest]: ingest sync state moved to globalThis to survive Next.js module isolation between instrumentation.ts and API route handlers
+- [Phase 07-api-migration]: getProjectsFromDb() reads sessions.model (raw IDs) and applies getModelDisplayName() — projects.models column is always '[]' from ingest
+- [Phase 07-api-migration]: dailyActivity in getDashboardStatsFromDb uses GROUP BY date (not date+project_id) for one entry per calendar date
+- [Phase 07-api-migration]: getSessionDetailFromDb returns DB aggregates with empty messages[] when JSONL missing (null only when session row absent from DB)
 
 ### Pending Todos
 
@@ -56,6 +59,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T16:32:21.547Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-03-19T17:16:35Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None

@@ -102,5 +102,5 @@ Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 | 4. Tech Debt Cleanup | v1.0 | 1/1 | Complete | 2026-03-19 |
 | 5. SQLite Foundation | v1.1 | 1/1 | Complete | 2026-03-19 |
 | 6. Delta Ingest | 2/2 | Complete   | 2026-03-19 | - |
-| 7. API Migration | v1.1 | 0/2 | Not started | - |
+| 7. API Migration | 1/2 | In Progress|  | - |
 | 8. Portability and UI | v1.1 | 0/? | Not started | - |
