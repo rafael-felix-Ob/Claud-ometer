@@ -10,7 +10,7 @@ Requirements for the history database milestone. Each maps to roadmap phases.
 ### Database Foundation
 
 - [ ] **DB-01**: System stores session data in a local SQLite database with WAL mode enabled
-- [ ] **DB-02**: System uses Drizzle ORM for type-safe database queries and schema management
+- [ ] **DB-02**: System uses better-sqlite3 for direct SQLite access with TypeScript types from types.ts
 - [ ] **DB-03**: Database schema auto-applies on first startup via instrumentation.ts (zero manual setup)
 - [ ] **DB-04**: Database connection uses globalThis singleton pattern to prevent hot-reload duplication
 - [ ] **DB-05**: Database file lives on Linux ext4 filesystem (not NTFS via WSL) to avoid locking issues
