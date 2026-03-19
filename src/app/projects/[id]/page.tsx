@@ -15,7 +15,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { data: sessions, isLoading } = useProjectSessions(projectId);
   const { data: activity } = useProjectActivity(projectId);
 
-  const projectName = projectId.split('-').pop() || projectId;
+  // Derive name from first session's projectName (populated from cwd basename by ingest)
+  const projectName = sessions?.[0]?.projectName || projectId;
 
   if (isLoading || !sessions) {
     return (
