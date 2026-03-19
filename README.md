@@ -26,6 +26,8 @@ A local-first analytics dashboard for [Claude Code](https://docs.anthropic.com/e
 
 **Active Sessions** — Real-time monitoring of running Claude Code sessions. Cards show status (working/waiting/idle) with animated indicators, session duration, active work time (excludes idle), consumed tokens, model, git branch, and project path. Auto-refreshes every 5 seconds. Click any card to expand and preview recent messages. GSD-managed sessions show current build phase and next action.
 
+![Active Sessions](./screenshots/active.png)
+
 **Data Export/Import** — Export all your Claude Code data as a ZIP. Import it on another machine to view the same dashboard. Toggle between live and imported data sources.
 
 ![Data Management](./screenshots/data.png)
