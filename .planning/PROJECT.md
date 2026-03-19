@@ -12,9 +12,11 @@ At a glance, know what every active Claude Code session is doing right now — n
 
 **Shipped:** v1.0 Active Sessions (2026-03-19)
 **Codebase:** 5,914 LOC TypeScript/TSX
-**Tech stack:** Next.js 16, React 19, SWR, Tailwind CSS v4, shadcn/ui, Recharts 3
+**Tech stack:** Next.js 16, React 19, SWR, Tailwind CSS v4, shadcn/ui, Recharts 3, better-sqlite3
 
 v1.0 delivered real-time active session detection and display. All 22 requirements satisfied. 4 phases, 9 plans completed across 23 days.
+
+Phase 5 complete — SQLite foundation with better-sqlite3 singleton, WAL mode, and 5-table schema (DB-01 through DB-05 validated).
 
 ## Requirements
 
@@ -51,7 +53,7 @@ v1.0 delivered real-time active session detection and display. All 22 requiremen
 
 ### Active
 
-- [ ] SQLite database schema and persistence layer
+- [x] SQLite database schema and persistence layer — Phase 5
 - [ ] Periodic background JSONL → SQLite ingest (delta sync)
 - [ ] Migrate all API routes to read from database instead of JSONL
 - [ ] Activity chart on project detail page
@@ -74,7 +76,9 @@ v1.0 delivered real-time active session detection and display. All 22 requiremen
 | Dedicated /active page over tab/widget | Clean separation, dedicated space for real-time view | ✓ Good |
 | Card grid layout over table | Matches existing dashboard aesthetic, better for status-at-a-glance | ✓ Good |
 | Tail-reading JSONL for state detection | Only need last few messages, avoids full file parse | ✓ Good |
-| SQLite over cloud database | Local-first philosophy, zero config, portable .db file | — Pending |
+| SQLite over cloud database | Local-first philosophy, zero config, portable .db file | ✓ Good |
+| better-sqlite3 over Drizzle/Prisma | Synchronous API, on Next.js serverExternalPackages allowlist, no webpack config | ✓ Good |
+| globalThis singleton for DB connection | Prevents hot-reload duplication in Next.js dev mode | ✓ Good |
 | Background ingest over on-demand parsing | Pages load instantly from DB; active sessions stay real-time from JSONL | — Pending |
 | DB merge over cloud sync | No accounts/auth needed; user controls when to merge | — Pending |
 
@@ -86,4 +90,4 @@ v1.0 delivered real-time active session detection and display. All 22 requiremen
 - **Compatibility**: Works alongside data source toggle (live vs imported)
 
 ---
-*Last updated: 2026-03-19 after v1.1 milestone start*
+*Last updated: 2026-03-19 after Phase 5 completion*
