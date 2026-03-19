@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getActiveDataSource } from '@/lib/claude-data/data-source';
+import { getSessionDetailFromDb } from '@/lib/db-queries';
 import { getSessionDetail } from '@/lib/claude-data/reader';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +11,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const session = await getSessionDetail(id);
+    const dataSource = getActiveDataSource();
+    const session = dataSource === 'live'
+      ? await getSessionDetailFromDb(id)
+      : await getSessionDetail(id);
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }

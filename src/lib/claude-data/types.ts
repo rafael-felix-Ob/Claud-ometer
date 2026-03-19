@@ -28,19 +28,6 @@ export interface LongestSession {
   timestamp: string;
 }
 
-export interface StatsCache {
-  version: number;
-  lastComputedDate: string;
-  dailyActivity: DailyActivity[];
-  dailyModelTokens: DailyModelTokens[];
-  modelUsage: Record<string, ModelUsage>;
-  totalSessions: number;
-  totalMessages: number;
-  longestSession: LongestSession;
-  firstSessionDate: string;
-  hourCounts: Record<string, number>;
-  totalSpeculationTimeSavedMs: number;
-}
 
 export interface HistoryEntry {
   display: string;
