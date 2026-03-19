@@ -53,10 +53,11 @@ Plans:
   3. The sidebar shows "last synced X seconds/minutes ago" that updates without a page reload
   4. Running the ingest job twice on the same unchanged dataset produces identical DB row counts (idempotent)
   5. Hot-reloading the dev server does not spawn multiple ingest scheduler instances
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
+- [ ] 06-01-PLAN.md — Ingest engine core: parseSessionFile export, ingest.ts with delta check + bulk import + aggregates, instrumentation.ts startup, tests
+- [ ] 06-02-PLAN.md — Sync status UI: /api/sync-status endpoint, useSyncStatus hook, sidebar sync status display
 
 ### Phase 7: API Migration
 **Goal**: All historical API routes read from SQLite instead of JSONL, returning identical data shapes, while active sessions and session detail conversation messages continue reading live JSONL files
@@ -98,7 +99,7 @@ Phases execute in strict dependency order: 5 -> 6 -> 7 -> 8
 | 2. Active Sessions Page | v1.0 | 3/3 | Complete | 2026-03-18 |
 | 3. GSD Integration | v1.0 | 2/2 | Complete | 2026-03-18 |
 | 4. Tech Debt Cleanup | v1.0 | 1/1 | Complete | 2026-03-19 |
-| 5. SQLite Foundation | 1/1 | Complete   | 2026-03-19 | - |
-| 6. Delta Ingest | v1.1 | 0/? | Not started | - |
+| 5. SQLite Foundation | v1.1 | 1/1 | Complete | 2026-03-19 |
+| 6. Delta Ingest | v1.1 | 0/2 | Not started | - |
 | 7. API Migration | v1.1 | 0/? | Not started | - |
 | 8. Portability and UI | v1.1 | 0/? | Not started | - |
