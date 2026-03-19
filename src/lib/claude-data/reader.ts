@@ -60,13 +60,30 @@ export function getHistory(): HistoryEntry[] {
 }
 
 export function projectIdToName(id: string): string {
-  const decoded = id.replace(/^-/, '/').replace(/-/g, '/');
-  const parts = decoded.split('/');
-  return parts[parts.length - 1] || id;
+  // Project IDs encode paths as hyphen-separated segments (e.g., -mnt-c-Git-my-project)
+  // This is lossy — hyphens in folder names (Claud-ometer) become indistinguishable from separators.
+  // Return the raw ID as fallback; callers should prefer cwd-based names when available.
+  return id;
 }
 
 export function projectIdToFullPath(id: string): string {
+  // Lossy: hyphens in folder names become path separators. Best-effort only.
   return id.replace(/^-/, '/').replace(/-/g, '/');
+}
+
+/**
+ * Scans JSONL files in a project directory to find the actual cwd.
+ * Tries multiple files since the first may lack a cwd field.
+ */
+export function findProjectCwd(projectPath: string): string | null {
+  try {
+    const jsonlFiles = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
+    for (const file of jsonlFiles) {
+      const cwd = extractCwdFromSession(path.join(projectPath, file));
+      if (cwd) return cwd;
+    }
+  } catch { /* skip */ }
+  return null;
 }
 
 export function extractCwdFromSession(filePath: string): string | null {
@@ -89,11 +106,8 @@ export function extractCwdFromSession(filePath: string): string | null {
 }
 
 function getProjectNameFromDir(projectPath: string, projectId: string): { name: string; fullPath: string } {
-  const jsonlFiles = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
-  if (jsonlFiles.length > 0) {
-    const cwd = extractCwdFromSession(path.join(projectPath, jsonlFiles[0]));
-    if (cwd) return { name: path.basename(cwd), fullPath: cwd };
-  }
+  const cwd = findProjectCwd(projectPath);
+  if (cwd) return { name: path.basename(cwd), fullPath: cwd };
   return { name: projectIdToName(projectId), fullPath: projectIdToFullPath(projectId) };
 }
 

@@ -285,23 +285,29 @@ export async function runIngestCycle(projectsDir?: string): Promise<void> {
 function getProjectName(projectDirPath: string, projectId: string): string {
   try {
     const jsonlFiles = fs.readdirSync(projectDirPath).filter(f => f.endsWith('.jsonl'));
-    if (jsonlFiles.length > 0) {
-      const firstFile = path.join(projectDirPath, jsonlFiles[0]);
-      // Read first line to extract cwd
-      const content = fs.readFileSync(firstFile, 'utf-8');
-      const firstLine = content.split('\n').find(l => l.trim());
-      if (firstLine) {
-        const msg = JSON.parse(firstLine);
-        if (msg.cwd) return path.basename(msg.cwd);
+    // Try each JSONL file until we find one with a cwd field
+    for (const file of jsonlFiles) {
+      try {
+        const filePath = path.join(projectDirPath, file);
+        const fd = fs.openSync(filePath, 'r');
+        const buffer = Buffer.alloc(4096);
+        const bytesRead = fs.readSync(fd, buffer, 0, 4096, 0);
+        fs.closeSync(fd);
+        const chunk = buffer.toString('utf-8', 0, bytesRead);
+        const firstLine = chunk.split('\n').find(l => l.trim());
+        if (firstLine) {
+          const msg = JSON.parse(firstLine);
+          if (msg.cwd) return path.basename(msg.cwd);
+        }
+      } catch {
+        continue;
       }
     }
   } catch {
     // Fall through to default
   }
-  // Decode project ID heuristic: -mnt-c-...-projectname -> last segment
-  const decoded = projectId.replace(/^-/, '/').replace(/-/g, '/');
-  const parts = decoded.split('/');
-  return parts[parts.length - 1] || projectId;
+  // Last resort: use the project ID as-is (lossy hyphen decoding is unreliable)
+  return projectId;
 }
 
 /**
@@ -313,11 +319,16 @@ export function recomputeAggregates(db: Database.Database): void {
   const runAggregates = db.transaction(() => {
     // Projects
     db.prepare('DELETE FROM projects').run();
+    // Derive project name from cwd (most reliable) — use REPLACE to extract basename,
+    // falling back to project_name if cwd is empty
     db.prepare(`
       INSERT INTO projects (id, name, path, session_count, total_messages, total_tokens, estimated_cost, last_active, models)
       SELECT
         project_id,
-        MAX(project_name),
+        CASE
+          WHEN MAX(cwd) != '' THEN REPLACE(MAX(cwd), RTRIM(MAX(cwd), REPLACE(MAX(cwd), '/', '')), '')
+          ELSE MAX(project_name)
+        END,
         MAX(cwd),
         COUNT(*),
         SUM(message_count),
