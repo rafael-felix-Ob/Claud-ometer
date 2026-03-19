@@ -37,9 +37,26 @@ v1.0 delivered real-time active session detection and display. All 22 requiremen
 - ✓ 5-second auto-refresh polling — v1.0
 - ✓ Project path display on active session cards — v1.0
 
+## Current Milestone: v1.1 History Database
+
+**Goal:** Persist parsed session data into a local SQLite database for faster queries, historical trends, and cross-machine portability.
+
+**Target features:**
+- SQLite local database as persistence layer for all historical session data
+- Periodic background ingest job syncing JSONL → SQLite (delta only, new/modified files)
+- All pages read from database except active sessions (still live JSONL)
+- Activity chart on project detail page (similar to overview heatmap)
+- Export/import .db file for cross-machine portability
+- Merge databases from different machines (dedup by session ID)
+
 ### Active
 
-(Next milestone requirements go here)
+- [ ] SQLite database schema and persistence layer
+- [ ] Periodic background JSONL → SQLite ingest (delta sync)
+- [ ] Migrate all API routes to read from database instead of JSONL
+- [ ] Activity chart on project detail page
+- [ ] Export/import database file
+- [ ] Merge databases from different machines with deduplication
 
 ### Out of Scope
 
@@ -57,13 +74,16 @@ v1.0 delivered real-time active session detection and display. All 22 requiremen
 | Dedicated /active page over tab/widget | Clean separation, dedicated space for real-time view | ✓ Good |
 | Card grid layout over table | Matches existing dashboard aesthetic, better for status-at-a-glance | ✓ Good |
 | Tail-reading JSONL for state detection | Only need last few messages, avoids full file parse | ✓ Good |
+| SQLite over cloud database | Local-first philosophy, zero config, portable .db file | — Pending |
+| Background ingest over on-demand parsing | Pages load instantly from DB; active sessions stay real-time from JSONL | — Pending |
+| DB merge over cloud sync | No accounts/auth needed; user controls when to merge | — Pending |
 
 ## Constraints
 
 - **Tech stack**: Next.js 16, React 19, SWR, Tailwind CSS v4, shadcn/ui, Recharts 3
-- **Local-first**: No external dependencies or services — filesystem only
+- **Local-first**: No external dependencies or cloud services — SQLite + filesystem only
 - **Performance**: 5-second polling must not degrade dashboard; tail-read JSONL, not full re-parse
 - **Compatibility**: Works alongside data source toggle (live vs imported)
 
 ---
-*Last updated: 2026-03-19 after v1.0 milestone completion*
+*Last updated: 2026-03-19 after v1.1 milestone start*
