@@ -1,150 +1,218 @@
 # Pitfalls Research
 
-**Domain:** Real-time filesystem monitoring — JSONL tail-reading, active session detection, polling dashboard
-**Researched:** 2026-03-18
-**Confidence:** HIGH (based on codebase analysis + verified community patterns)
+**Domain:** SQLite persistence + background JSONL ingest + cross-machine DB merge on Next.js App Router (WSL2)
+**Researched:** 2026-03-19
+**Confidence:** HIGH (verified with official docs, GitHub issues, and community reports)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Partial Line Read from Actively-Written JSONL
+### Pitfall 1: better-sqlite3 Native Module Bundled by Webpack/Turbopack
 
 **What goes wrong:**
-When Claude Code is actively writing a session, the JSONL file is appended line-by-line. Reading the tail of the file mid-write catches a line whose JSON object is incomplete — the line terminates mid-object. `JSON.parse()` throws, the line is silently dropped, and the last-message-based state detection (working / waiting / idle) reads the wrong last message.
+Next.js tries to bundle `better-sqlite3` as part of server-side code. Because it is a native Node.js addon (`.node` binary), it cannot be bundled — the build fails with errors like `Module not found: Can't resolve 'better-sqlite3'` or crashes at runtime with `Cannot find module`.
 
 **Why it happens:**
-The existing `forEachJsonlLine()` already silently swallows JSON parse errors (`catch { /* skip malformed line */ }`). This was safe for historical reads but is dangerous for tail reads because the "malformed" line is actually a valid line that hasn't finished being written yet. The code discards it and the state machine picks up the previous line as authoritative.
+Next.js App Router bundles all server-side code by default, including API routes and Server Components. Native addons with `.node` binaries are not bundleable — they must be loaded from the filesystem at runtime by Node.js directly, not via webpack/Turbopack's module resolution.
 
 **How to avoid:**
-For tail reads specifically, treat a JSON parse failure on the last line as "incomplete write in progress" rather than "corrupt line". Strategy: read the last N bytes of the file, find lines, try to parse from the end backwards, and use the last successfully-parsed line as the state indicator. Never discard the final parse failure silently — log it as `incomplete_write` so the polling cycle can retry on the next tick. Set the session status to `working` (not `idle`) when the final line fails to parse, because active writes imply active processing.
+Add `better-sqlite3` to `serverExternalPackages` in `next.config.ts` to opt it out of bundling:
+
+```ts
+const nextConfig = {
+  serverExternalPackages: ['better-sqlite3'],
+}
+```
+
+Note: Next.js 16.1 with Turbopack auto-resolves transitive `serverExternalPackages` dependencies, but `better-sqlite3` still requires the explicit entry for direct use. Verify the config is present before the first build attempt — not after the first failure.
 
 **Warning signs:**
-- Sessions that flip between "working" and "idle" rapidly on each 5-second poll
-- Session status shows "waiting for input" immediately after a tool call with no intervening user message
-- `console.log` of last parsed message timestamp shows it is 2+ messages behind the actual file tail
+- Build error: `Module not found: Can't resolve 'better-sqlite3'`
+- Runtime error: `Error: Cannot find module 'better-sqlite3'`
+- Build succeeds but first API route call throws `Invalid ELF header` (binary loaded through wrong path)
+- Turbopack dev build succeeds but `next build` production build fails (different bundlers)
 
-**Phase to address:** Phase implementing state detection logic (tail-read function and status inference).
+**Phase to address:** Phase 1 (SQLite schema and persistence layer) — must be the very first thing verified before any schema or query code is written.
 
 ---
 
-### Pitfall 2: mtime-Based Activity Window is Too Narrow for Claude Code Thinking Time
+### Pitfall 2: Multiple SQLite Connections from Hot Reload Creating "Database is Locked" Errors
 
 **What goes wrong:**
-Claude Code can be in a "thinking" state — receiving an API response, processing tool results — for 30-120 seconds without writing anything to the JSONL file. Polling every 5 seconds and declaring a session "idle" if `mtime > N seconds ago` will constantly report active sessions as idle.
+In `next dev`, every saved file triggers a module hot-reload that re-executes the module that opens the SQLite connection. Without a singleton guard, each hot-reload creates a new `Database` instance while the previous one is not closed. When the background ingest job is running (writing to the DB), a second connection attempt hits `SQLITE_BUSY: database is locked`.
 
 **Why it happens:**
-Developers pick a threshold like "modified in the last 30 seconds = active" because that feels reasonable. But Claude Code's actual write pattern is bursty: messages are appended when the API responds, not continuously. Long model calls with heavy tool use can have silent gaps of 60-90+ seconds while the model reasons.
+Next.js Fast Refresh re-executes module-level code on every file save. A naive `const db = new Database(DB_PATH)` at module scope creates a new connection on every reload. better-sqlite3 uses synchronous locking — only one writer at a time — so the ingest job's write lock blocks the new connection's attempt to open.
 
 **How to avoid:**
-Use a two-tier threshold:
-- **Working**: `mtime < 30 seconds` ago — file was written very recently
-- **Active (possibly thinking)**: `mtime < 5 minutes` ago AND the last message in the file is an assistant turn without a following user turn — Claude responded but user hasn't typed yet
-- **Idle**: `mtime > 5 minutes` ago OR last message is a user turn with no subsequent assistant turn for > 5 minutes
-- **Historical**: `mtime > 30 minutes` ago
+Use the `globalThis` singleton pattern specifically for the database connection:
 
-Do NOT use mtime alone. Combine mtime with last-message-type analysis.
+```ts
+// lib/db/connection.ts
+import Database from 'better-sqlite3';
+
+const DB_PATH = path.join(os.homedir(), '.claude', 'claud-ometer.db');
+
+declare global {
+  var __db: Database.Database | undefined;
+}
+
+function getDb(): Database.Database {
+  if (!global.__db || !global.__db.open) {
+    global.__db = new Database(DB_PATH);
+    global.__db.pragma('journal_mode = WAL');
+    global.__db.pragma('busy_timeout = 5000');
+  }
+  return global.__db;
+}
+
+export { getDb };
+```
+
+The `global.__db` persists across hot-reloads in development. In production, each process gets one connection. The `busy_timeout` pragma is also critical (see Pitfall 4).
 
 **Warning signs:**
-- Active sessions always show "idle" right after tool execution starts
-- Sessions during long `computer_use` or web fetch operations flash idle
-- Users report the active page is empty even though Claude Code is clearly running
+- `SqliteError: database is locked` in dev server console on file save
+- Errors appear specifically after editing any file that imports from `lib/db/`
+- Error goes away after restarting the dev server (confirming it is a stale-connection issue, not a logic bug)
+- CPU spikes: multiple connections all trying to acquire the same write lock
 
-**Phase to address:** Phase defining the status inference algorithm and thresholds.
+**Phase to address:** Phase 1 (SQLite persistence layer) — the singleton must be established in the connection module before any other DB code is written.
 
 ---
 
-### Pitfall 3: Polling All JSONL Files on Every 5-Second Tick
+### Pitfall 3: SQLite Database File Stored on NTFS via WSL2 Causes WAL Mode Failures
 
 **What goes wrong:**
-The existing `getSessions()` and `getProjects()` already scan the entire `~/.claude/projects/` directory on every API call. Adding a `/api/active-sessions` endpoint that also does a full directory scan on a 5-second SWR `refreshInterval` means the filesystem is hit 12 times per minute with a full scan plus full JSONL parse for every session. With 50 projects and 10 sessions each, that is 500 JSONL reads per minute, easily pegging CPU.
+If the `.db` file is stored on a Windows NTFS path (e.g., `/mnt/c/SourceControl/...`) accessed from WSL2, SQLite's WAL (Write-Ahead Logging) mode fails or behaves incorrectly. Specifically: WAL mode relies on POSIX advisory locks, which are not correctly implemented for NTFS volumes accessed via WSL2's Plan 9 filesystem bridge. The result is `SqliteError: disk I/O error` or `SQLITE_IOERR_LOCK` errors during concurrent reads/writes.
 
 **Why it happens:**
-The natural path of least resistance is to call `getSessions()` (already exists) and filter by recency. This reuses existing code but inherits its full-scan cost. The `force-dynamic` on all routes means no Next.js caching saves it.
+WSL2 accesses Windows NTFS through a `9p` (Plan 9) filesystem protocol driver. This driver does not faithfully implement POSIX file locking semantics that SQLite's WAL mode requires. SQLite documentation explicitly states: "WAL mode does not work on a network filesystem." The WSL2 9p bridge is effectively a network filesystem for this purpose. Microsoft's own WSL GitHub tracker documents this as a known issue (issue #4689).
 
 **How to avoid:**
-For active session detection, do NOT call `getSessions()`. Instead:
-1. Use `fs.statSync()` only — scan directory for files with `mtime < threshold` (no JSONL parsing at the directory-scan stage)
-2. Only open and tail-read JSONL files that pass the mtime filter (typically 0-5 files vs 500)
-3. Cache the directory listing + mtime map in a module-level variable with a 4-second TTL (slightly under the 5-second poll interval) so rapid re-requests don't re-scan
-4. Never call `parseSessionFile()` (the full aggregation function) for active session detection — it reads the entire file
+Store the database file on the WSL2 Linux filesystem, NOT on an NTFS/Windows path:
+- Use `~/.claude/claud-ometer.db` — this resolves to `/home/<user>/.claude/` which is on the Linux ext4 VHD, not NTFS.
+- The existing `reader.ts` already reads `~/.claude/projects/` from the Linux filesystem. The DB file should live in the same location.
+- Never construct the DB path from `process.cwd()` — in this project, cwd is `/mnt/c/SourceControl/...` (NTFS). Always use `path.join(os.homedir(), '.claude', 'claud-ometer.db')`.
 
 **Warning signs:**
-- `npm run dev` CPU spikes to 50%+ every 5 seconds
-- Other pages (overview, sessions list) become slow or unresponsive while /active is open
-- `top` or Activity Monitor shows the Node.js process pegged
+- `SQLITE_IOERR` or `disk I/O error` when enabling WAL mode via `PRAGMA journal_mode = WAL`
+- WAL pragma "succeeds" (returns `wal`) but WAL-mode performance characteristics are absent
+- Database works fine in `DELETE` journal mode but breaks as soon as WAL is enabled
+- Database works when opened by a Windows process (DBeaver on Windows) but locks when opened from WSL simultaneously
 
-**Phase to address:** Phase implementing the `/api/active-sessions` route — the directory scan optimization must be baked in from the start, not added as a performance fix later.
+**Phase to address:** Phase 1 (SQLite schema and persistence layer) — the DB path must be set correctly from the start. Changing the path later requires a migration.
 
 ---
 
-### Pitfall 4: Concurrent Reads of the Same JSONL File Being Written
+### Pitfall 4: Background Ingest Runs Inside Next.js API Route — Dies on Every Request Timeout
 
 **What goes wrong:**
-Claude Code appends to the session JSONL while the dashboard is reading it via `readline` streaming. On Linux/macOS, concurrent reads are safe (POSIX allows multiple readers). However, the readline stream holds a read file descriptor open for the duration of the scan. If Claude Code flushes a partial write during this window, the reader may receive:
-- A line that terminates in the middle of a JSON object (partial write)
-- A line that is complete but represents a state not yet final (Claude mid-tool-call)
+The background JSONL ingest job is implemented as a `setInterval` inside an API route handler or triggered by a special `/api/ingest` endpoint. In a local Next.js process, `setInterval` inside an API route handler creates an interval that survives across requests but accumulates on every route invocation — each new request to `/api/ingest` adds another interval. After 10 requests, 10 parallel ingest jobs run simultaneously, all trying to write to the same SQLite DB, causing constant lock contention.
 
-The partial line is silently dropped (existing behavior). The mid-tool-call line causes a status misclassification.
+Alternatively, if implemented as a fire-and-forget in a route handler, the Node.js process may garbage-collect the job when the request completes.
 
 **Why it happens:**
-Node.js `readline` with `createReadStream` reads the file as it exists at stream-open time but can include bytes written after opening if the OS read buffer fills slowly. This creates a non-deterministic window. The existing `forEachJsonlLine` does not handle this case.
+Next.js API routes are designed to be stateless request handlers. Node.js does not guarantee that work started inside a route handler persists beyond the response being sent. In practice, `setInterval` at module scope in a Next.js server process does persist, but it re-registers on every hot-reload (the hot-reload pitfall from Pitfall 2 applies here too).
 
 **How to avoid:**
-For tail reads, use `fs.openSync` + `fs.readSync` with explicit byte positions (like the existing `extractCwdFromSession` pattern in reader.ts does). Read a fixed buffer from the end of the file (`file size - N bytes`), parse complete lines from that buffer, and stop at any line that fails JSON.parse. This is deterministic and does not create a streaming reader that can receive mid-write bytes. Never use `createReadStream` for active-session tail reads.
+Use a module-level singleton for the ingest scheduler, registered once and guarded with the same `globalThis` pattern used for the DB connection:
+
+```ts
+// lib/ingest/scheduler.ts
+declare global {
+  var __ingestInterval: NodeJS.Timeout | undefined;
+}
+
+export function startIngestScheduler() {
+  if (global.__ingestInterval) return; // already running
+  global.__ingestInterval = setInterval(runIngest, 30_000); // 30s
+}
+```
+
+Call `startIngestScheduler()` from a single initialization point — the DB connection module's `getDb()` factory is a natural place (it runs once on first DB access). Never call it from a request handler body that executes per-request.
 
 **Warning signs:**
-- Occasional crashes or `Unexpected token` errors in server logs during active sessions
-- Status shows "idle" exactly when a long tool call starts (the incomplete partial line is the tool_use block)
+- Server logs show ingest running 5-10 times simultaneously (overlapping log lines)
+- `SQLITE_BUSY` errors increase over uptime (more intervals = more contention)
+- Ingest progress appears duplicated (same session inserted N times)
+- Memory usage grows linearly with number of dev server reloads
 
-**Phase to address:** Phase implementing the tail-read utility function.
+**Phase to address:** Phase 2 (background ingest job) — the scheduler singleton must be established at the same time as the ingest function itself, not added later.
 
 ---
 
-### Pitfall 5: GSD STATE.md / ROADMAP.md Not Found for Most Sessions
+### Pitfall 5: JSONL-to-SQLite Migration Drops Existing Sessions Due to Wrong Dedup Key
 
 **What goes wrong:**
-The GSD progress feature reads `.planning/STATE.md` and `.planning/ROADMAP.md` from the project directory associated with each active session. Most Claude Code sessions are NOT GSD projects. If the code assumes these files exist and throws or returns error states when missing, the entire active sessions view breaks for non-GSD sessions (which is the majority).
+The initial migration from JSONL-only to database-backed reads the session ID from the JSONL file. But the session ID in the JSONL filename (e.g., `abc123.jsonl`) may differ from the session ID embedded in the JSONL content's `sessionId` field. Using the wrong one as the dedup key causes:
+- Duplicate sessions in the DB (same session inserted twice with different IDs)
+- Sessions missing from the DB (ID mismatch means delta-sync thinks a session is new when it was already ingested)
 
 **Why it happens:**
-Developers implement the happy path (session is a GSD project) and only discover the missing-file case in testing. Even for GSD projects, the `.planning/` directory may exist during some phases but not others (e.g., before `/gsd:init`).
+Claude Code JSONL filenames use the session UUID as the filename. The content also contains a `sessionId` field. These should be identical, but edge cases exist: session files that were renamed, imported/exported, or created by different Claude Code versions may have discrepancies. Using the filename as the canonical ID (since that's what `reader.ts` currently uses) is the safest choice because all existing code already resolves sessions by filename.
 
 **How to avoid:**
-Treat GSD progress as entirely optional per session:
-- `fs.existsSync()` check before any read of `.planning/STATE.md` or `.planning/ROADMAP.md`
-- Return `null` (not an error) for both files when absent
-- The UI card for a non-GSD session must render cleanly with no GSD section — not an empty section, not a spinner, not an error badge
-- Cache the "no GSD files" result per project path for the duration of the poll cycle so the filesystem isn't checked 12 times/minute per non-GSD project
+Use the JSONL filename (without `.jsonl` extension) as the canonical `session_id` primary key in the DB. This matches the existing `reader.ts` behavior where `id` is set from the filename. Do not use the `sessionId` field from the JSONL content as the primary key — it is redundant data that can drift. Add a UNIQUE constraint on `session_id` and use `INSERT OR REPLACE` for upserts, not plain `INSERT`.
 
 **Warning signs:**
-- `/active` page shows "Error loading GSD data" banners for every session
-- Server logs show ENOENT errors every 5 seconds per active session
-- Active sessions page only works in the repo where Claud-ometer itself is developed (the one GSD project in the test environment)
+- Session count in DB is double the JSONL file count after initial migration
+- Sessions appear with identical timestamps and token counts but different IDs
+- Dashboard shows same project appearing twice with slight stat differences
+- Delta-sync always re-processes all sessions (mtime check passes but ID lookup fails)
 
-**Phase to address:** Phase implementing GSD progress reading — must be the first thing validated with non-GSD sessions.
+**Phase to address:** Phase 1 (schema design) and Phase 2 (initial migration) — the primary key strategy is a schema decision that is expensive to change later.
 
 ---
 
-### Pitfall 6: Session "Active" Detection Misidentifies Resumed Historical Sessions
+### Pitfall 6: Delta Sync Uses Only File mtime — Misses Modified Sessions
 
 **What goes wrong:**
-A session that was created yesterday and resumed today has an `mtime` of now (because Claude Code appended to it on resume). But the session's `firstTimestamp` is yesterday. Duration calculations that use `firstTimestamp` to `now` show the session as 18+ hours long. The "active" detection also shows it as active correctly, but the duration display misleads the user.
+The ingest job checks `mtime > last_ingested_at` to decide which JSONL files are new or modified. But JSONL files in `~/.claude/projects/` can have their mtime reset when:
+- The directory is accessed from Windows (Windows Explorer, antivirus scan, backup software) — NTFS access can update atime/mtime
+- The user imports a backup ZIP and extracts files (extracted files get current timestamp regardless of content age)
+- Filesystem sync tools (Dropbox, OneDrive, cloud backup) touch files on sync
 
-**Why it happens:**
-`parseSessionFile()` computes duration as `lastTimestamp - firstTimestamp`. For active sessions, "last timestamp" is the most recent completed message, not now. For resumed historical sessions, there's a multi-hour gap between yesterday's messages and today's first message that inflates duration.
+When mtime is unreliable, the delta sync either re-ingests everything on every run (performance regression) or misses legitimately updated files.
 
 **How to avoid:**
-For the active sessions view, compute duration differently from historical sessions:
-- Use `file mtime` (when the file was last written) minus `start of current contiguous block`
-- A "contiguous block" ends when there is a gap > N minutes (30 minutes is a reasonable threshold) between consecutive message timestamps
-- The session duration to display is the length of the most recent contiguous block, not total session lifetime
-- Show "resumed session" indicator when the current block start is > 1 hour after the first message
+Use a two-factor delta check:
+1. `mtime > last_ingested_at` (fast first filter)
+2. Content hash or file size comparison against the stored `file_size_bytes` column
+
+Store `file_size_bytes` in the sessions table. If `mtime` is newer but `file_size_bytes` is unchanged, skip re-ingest. If `file_size_bytes` changed, always re-ingest regardless of mtime. This handles antivirus mtime touch (size unchanged) and correctly catches appended sessions (size always grows).
+
+For the initial migration, ingest everything regardless of mtime and record the `file_size_bytes` for all sessions.
 
 **Warning signs:**
-- Active sessions show durations like "17h 32m" when the user just started Claude Code
-- Duration countdown ticks correctly per second but starts at an absurd value
+- Ingest job log shows 400+ sessions "updated" on every 30-second run even when no Claude Code sessions are active
+- CPU usage spikes every 30 seconds even at rest
+- Sessions on the dashboard appear to have their timestamps reset to the current day
 
-**Phase to address:** Phase implementing duration calculation for active sessions.
+**Phase to address:** Phase 2 (delta sync implementation) — the two-factor check must be designed before the first sync run, not retrofitted after observing mtime unreliability.
+
+---
+
+### Pitfall 7: Database Merge Creates "Phantom" Sessions from Different Machines
+
+**What goes wrong:**
+When merging databases from two machines, sessions from machine B are inserted into machine A's DB using `INSERT OR IGNORE ON CONFLICT (session_id)`. Both machines ran Claude Code and created sessions, but some sessions on machine B are work-in-progress (not yet complete JSONL files). The merge inserts a snapshot of those incomplete sessions. Later, when the user continues those sessions on machine B and merges again, the delta sync does not detect the update because the session ID already exists and `INSERT OR IGNORE` silently skips it — the session in the DB remains frozen at the snapshot state from the first merge.
+
+**Why it happens:**
+`INSERT OR IGNORE` only prevents duplicate-key errors. It does not update existing rows. For session merging, the correct semantics are: "insert if new, update if the source data is newer (more complete)." Using `INSERT OR REPLACE` fixes this but blindly overwrites newer local data with older imported data when merge direction is reversed.
+
+**How to avoid:**
+Use `INSERT INTO ... ON CONFLICT (session_id) DO UPDATE SET ... WHERE excluded.message_count > sessions.message_count` (partial update). The logic: accept the incoming row's data only if it has more messages than the existing row. `message_count` is a reliable proxy for "more complete" because JSONL files only grow — they are append-only.
+
+Also track a `source_machine` column (e.g., hostname) and a `last_merged_at` timestamp per session to detect merge loops.
+
+**Warning signs:**
+- After a second merge, some sessions show token counts from weeks ago even though the user continued working on them
+- Session detail page shows a conversation that appears truncated mid-way
+- `message_count` in DB is lower than the number of lines in the corresponding JSONL file
+
+**Phase to address:** Phase 4 (DB merge) — the `ON CONFLICT DO UPDATE` strategy must be specified in the merge implementation spec, not left as an implementation detail.
 
 ---
 
@@ -152,11 +220,12 @@ For the active sessions view, compute duration differently from historical sessi
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Call existing `getSessions()` for active detection | Zero new code | Full directory scan + full JSONL parse every 5 seconds; CPU spikes | Never — mtime filter + tail read must be purpose-built |
-| Use `refreshInterval: 5000` on existing SWR hooks | Trivially adds polling to existing hooks | All existing pages start polling at 5s too if hooks are shared; other pages get expensive | Never — active-sessions hook must be a new, isolated hook |
-| Hard-code "modified in last 60s = active" threshold | Simple, easy to explain | Misses thinking time; misclassifies 40% of genuinely active sessions | Only during initial spike testing with known short tasks |
-| Use `parseSessionFile()` for status and token counts on active sessions | Reuse existing aggregation | Reads entire JSONL every 5s regardless of size | Never — tail-read only for active; full parse only on explicit navigation |
-| Parse STATE.md with a custom regex | Fast implementation | Fragile against GSD file format changes; breaks silently | Only if no structured parse API is available and format is documented/stable |
+| `INSERT OR IGNORE` for all session upserts | Simple, no conflict logic needed | Incomplete sessions from merge are never updated; data freezes at first-seen state | Never for merge target — use `ON CONFLICT DO UPDATE WHERE` |
+| Store DB on `/mnt/c/` NTFS path (same as codebase) | Single location for all project files | WAL mode failures, file locking errors from Windows processes accessing same file | Never — always use `~/.claude/` (Linux fs) |
+| Run ingest inside a request handler | Trivial to implement, no background infrastructure | Multiple simultaneous ingest runs from concurrent requests; connection lock contention | Never — always use module-level singleton scheduler |
+| Skip schema migrations (run `CREATE TABLE IF NOT EXISTS` on every startup) | No migration infrastructure needed | Cannot add columns without breaking existing installs; no rollback path | Only for schema version 1 (initial creation). After first release: add proper migrations. |
+| Use JSONL `sessionId` field as DB primary key instead of filename | "Canonical" session ID from source | Discrepancy between filename and content ID causes duplicates; breaks consistency with existing `reader.ts` | Never — use filename |
+| Re-ingest all sessions on every delta sync | Correct results guaranteed | 400+ JSONL file reads every 30 seconds; defeats the purpose of having a DB | Only for the one-time initial migration run |
 
 ---
 
@@ -164,11 +233,13 @@ For the active sessions view, compute duration differently from historical sessi
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| SWR `refreshInterval` on `/api/active-sessions` | Set it on the shared `useStats` or `useSessions` hook by adding a parameter | Create a dedicated `useActiveSessions()` hook with its own SWR key and `refreshInterval: 5000`; never add polling to existing hooks |
-| Next.js `force-dynamic` on active sessions route | Assume it's enough to prevent stale responses | It prevents Next.js caching but does not prevent module-level in-process cache; the directory listing cache (4s TTL) intentionally uses module-level state — this is correct and expected |
-| File `mtime` on WSL (Windows Subsystem for Linux) | Trust mtime precision to milliseconds | WSL filesystem mtime has lower precision for Windows-hosted files (1-2 second granularity); use > 10 second threshold comparisons, not < 5 second |
-| GSD STATE.md parsing | Parse entire file with `readFileSync` | Read only the frontmatter block (first ~20 lines) using the buffer-read pattern from `extractCwdFromSession` — STATE.md can be large for long milestones |
-| SWR deduplication with `refreshInterval` | Assume 2 components with same key share one poll | SWR deduplicates requests within the same dedupingInterval (2s default), not across tabs; if user opens /active in two browser tabs, two independent polls fire |
+| better-sqlite3 + Next.js | Import at module scope without `serverExternalPackages` | Add `serverExternalPackages: ['better-sqlite3']` to `next.config.ts` before first build |
+| better-sqlite3 + hot reload | `new Database()` at module scope without `globalThis` guard | Wrap in `globalThis.__db` singleton; check `!global.__db || !global.__db.open` before creating |
+| WAL mode + WSL2 | Enable WAL on a `/mnt/c/` path | Store DB at `~/.claude/claud-ometer.db` (Linux ext4 fs, not NTFS) |
+| Ingest scheduler + hot reload | `setInterval` at module scope without `globalThis` guard | Wrap in `globalThis.__ingestInterval` singleton; guard with `if (global.__ingestInterval) return` |
+| JSONL reader + DB ingest | Call full `parseSessionFile()` (existing reader) for ingest | Use the existing reader as-is for initial migration; for delta re-ingest, only re-parse files whose `file_size_bytes` changed |
+| DB merge + `INSERT OR IGNORE` | Assume existing sessions are skipped correctly | Use `ON CONFLICT DO UPDATE SET ... WHERE excluded.message_count > sessions.message_count` |
+| Active sessions + DB reads | Route active sessions through DB | Active sessions must continue reading live JSONL directly (via existing `reader.ts`) — DB rows for in-progress sessions are stale by definition |
 
 ---
 
@@ -176,11 +247,11 @@ For the active sessions view, compute duration differently from historical sessi
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Full JSONL parse in polling route | CPU 40-80% every 5 seconds, other pages lag | mtime filter first, tail-read only for recently-modified files, dedicated route separate from historical scan | Immediately with > 20 total sessions across projects |
-| No module-level cache for directory listings | Filesystem scan 12x/minute per active page tab | 4-second in-memory cache for `{ projectDir → [files with mtime] }` map in active-sessions reader | When user has > 5 projects (noticeable) or > 50 projects (severe) |
-| `fs.statSync` inside `forEachJsonlLine` callback | Cascading stat calls during line enumeration | Separate the "which files are recent?" stat phase from the "read content" phase | Immediately — this is an O(n²) pattern |
-| GSD file read without caching | STATE.md + ROADMAP.md read on every poll per active session | Cache parsed GSD state per project path with 5-second TTL | With > 3 concurrent active GSD sessions |
-| Synchronous `fs.readFileSync` in route handler | Route handler blocks event loop during read | Use `fs.promises.readFile` or the existing readline streaming approach for any file > 10KB | When STATE.md or ROADMAP.md grows beyond ~1KB (common for complex milestones) |
+| Ingest wraps each session in its own transaction | Ingest of 400 sessions takes 30+ seconds (30ms per fsync in DELETE journal mode) | Batch all upserts in a single transaction; WAL mode reduces overhead but batching is still 10-25x faster | Immediately with > 50 sessions |
+| Full JSONL parse for delta-sync unchanged sessions | CPU spikes every 30 seconds even with no new sessions | Two-factor check: skip if `mtime` unchanged OR `file_size_bytes` unchanged | With > 200 sessions total |
+| `SELECT *` in API routes that previously called `getSessions()` raw | Dashboard loads 2-5x slower than expected | Use indexes on `project_id`, `timestamp`, `mtime`; select only needed columns | With > 500 sessions in DB |
+| WAL file grows unbounded during heavy ingest | DB directory balloons; reads slow down as WAL grows | Call `db.pragma('wal_checkpoint(PASSIVE)')` at end of each ingest batch | WAL file above ~10 MB (roughly 10,000 upserts without checkpoint) |
+| DB opened with default `busy_timeout = 0` | First concurrent read/write throws `SQLITE_BUSY` immediately | Set `db.pragma('busy_timeout = 5000')` on connection creation | Any concurrent read during ingest |
 
 ---
 
@@ -188,8 +259,9 @@ For the active sessions view, compute duration differently from historical sessi
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Exposing `.planning/STATE.md` content verbatim in API response | Leaks internal milestone plans, task names, progress details | This is a local-only dashboard — the risk is minimal. Note it in code comments. Do not add auth — it adds complexity with no local benefit |
-| Reading arbitrary paths from session `cwd` field for GSD files | A malformed JSONL with `cwd: "../../etc"` could cause path traversal to read system files | Validate that `cwd` resolves to a path under `~` (home directory) before constructing `.planning/` paths from it; use `path.resolve()` and check the result starts with `os.homedir()` |
+| DB file stored in project directory (`/mnt/c/SourceControl/.../claud-ometer.db`) | Accidentally committed to git; leaks conversation history | Always store at `~/.claude/claud-ometer.db`; add `*.db` to `.gitignore` |
+| DB path constructed from user-supplied `projectId` query param | Path traversal: `projectId=../../etc/passwd` causes DB open on wrong file | DB path is a fixed constant, never derived from request parameters |
+| Imported `.db` file accepted without size check | Maliciously large file could fill disk | Validate file size before accepting import (e.g., reject if > 500 MB) |
 
 ---
 
@@ -197,25 +269,26 @@ For the active sessions view, compute duration differently from historical sessi
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Show spinner during every 5-second poll | Page flickers every 5 seconds; user loses scroll position | SWR with `keepPreviousData: true` (SWR v2 option); show stale data while revalidating; only show spinner on initial load |
-| Show empty state when Claude Code is not running | User confused — is the feature broken or just no sessions? | Distinguish "no active sessions found" from "never loaded": show explicit "No active Claude Code sessions detected. Sessions appear here when Claude Code is running." |
-| All 3 status labels (working / waiting / idle) update immediately on every poll | Status oscillates visibly if threshold is on the boundary | Debounce status transitions: require 2 consecutive polls to agree before changing displayed status (prevents flicker at boundary) |
-| Display raw JSONL session ID as the session title | Non-human UUID is meaningless | Use `cwd` basename (project folder name) + git branch as the primary label; fall back to session ID only if both are absent |
-| Show per-session token count from full parse | Forces full JSONL read every 5s | Only show accumulated token count from the tail-read data (last N messages); label it "recent tokens" not "total tokens" |
+| Dashboard shows stale DB data during ingest with no indicator | User sees stats that don't match what they just did; trust erodes | Show "Last synced: X seconds ago" indicator; SWR revalidation fires after ingest completes |
+| Initial migration runs synchronously on first page load | Dashboard appears frozen for 10-60 seconds on first install | Run initial migration in background; show "Initializing database..." indicator; page renders with empty state, not spinner |
+| DB merge progress is not visible | Merge of large DB from another machine appears to hang | Show progress during merge: "Importing N of M sessions..." with a cancel option |
+| Active sessions page reads from DB | Active session cards show stale data (DB is 30 seconds behind JSONL) | Active sessions page must always read live JSONL; DB is only for historical pages |
+| "Export DB" exports the working database directly | User receives a locked/WAL-split file that cannot be opened cleanly elsewhere | Run `PRAGMA wal_checkpoint(FULL)` and `VACUUM INTO 'export.db'` before serving the export — never stream the live DB file |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Active session detection**: Tested with a Claude Code session that has been running for > 30 minutes with gaps — verify it still shows as active, not idle
-- [ ] **Partial line handling**: Tested by opening the active page while Claude Code is in the middle of a multi-tool response — verify no crash and no "idle" flash
-- [ ] **Non-GSD sessions**: Tested with a project directory that has no `.planning/` folder — verify GSD section is hidden (not erroring) for those sessions
-- [ ] **Historical session resume**: Tested with a session that was started yesterday and resumed today — verify duration shows current block, not total lifetime
-- [ ] **WSL mtime precision**: If running on Windows/WSL, tested that 5-second polling still detects changes reliably (mtime granularity issue)
-- [ ] **Multiple active sessions**: Tested with 3+ concurrent Claude Code sessions (open multiple terminals) — verify all appear correctly and CPU stays below 20%
-- [ ] **Empty state**: Tested with no active sessions (all Claude Code instances closed) — verify explicit "nothing running" message, not blank page
-- [ ] **Data source toggle**: Tested that switching to imported data mode hides the /active page or shows a clear "not available in imported mode" message (imported data cannot have active sessions)
-- [ ] **Tab visibility**: Verified that SWR `refreshInterval` respects tab visibility — polling should pause when browser tab is hidden (SWR default behavior; confirm it's not overridden)
+- [ ] **better-sqlite3 bundling**: Verify `next build` production build succeeds (not just `next dev`) — Turbopack and webpack have different bundling behavior
+- [ ] **WAL mode**: After `PRAGMA journal_mode = WAL`, verify a `-wal` file appears next to the `.db` file in `~/.claude/` (confirms WAL is active, not silently falling back)
+- [ ] **Hot reload singleton**: Trigger 10 consecutive file saves in dev mode and verify server logs show exactly ONE ingest run starting, not 10
+- [ ] **Delta sync**: Modify one JSONL file (append a line manually) and verify the ingest job picks it up within 30 seconds without re-ingesting all other sessions
+- [ ] **Dedup key**: Run initial migration, then run it again immediately — verify session count is unchanged (idempotent)
+- [ ] **DB path on WSL**: Verify `~/.claude/claud-ometer.db` resolves to `/home/<user>/.claude/` (Linux fs), not `/mnt/c/...` (NTFS)
+- [ ] **Active sessions**: Verify that with DB enabled, the `/active` page still reads live JSONL (not DB) — confirm by starting a new Claude Code session and seeing it appear without waiting for the 30-second ingest cycle
+- [ ] **Export**: Verify the exported `.db` file opens in DBeaver/SQLiteViewer without errors on a fresh machine (WAL checkpoint and VACUUM must run before export)
+- [ ] **Merge idempotency**: Run the same DB merge twice — verify session count and token counts are unchanged after the second merge
+- [ ] **Data source toggle**: Verify that switching to "imported data" mode still works after DB is added (the data source toggle must route reads to imported data store, not the main DB)
 
 ---
 
@@ -223,11 +296,13 @@ For the active sessions view, compute duration differently from historical sessi
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Full JSONL parse in production polling | MEDIUM | Create dedicated `getActiveSessions()` function that uses mtime filter + tail read; update route to call new function; existing `getSessions()` unchanged |
-| Status oscillation from boundary threshold | LOW | Add debounce wrapper: `prevStatus === newStatus || consecutiveSameCount >= 2` before emitting status change; no architecture change |
-| GSD file read crashes | LOW | Wrap all GSD reads in try-catch with `null` return; add `existsSync` guard before every read; takes < 1 hour |
-| Duration showing session lifetime instead of current block | MEDIUM | Add `findCurrentSessionBlock()` helper that scans timestamps for contiguous blocks; used only in active sessions, not historical sessions |
-| CPU spike from polling | HIGH (if discovered late) | Requires extracting a purpose-built `getActiveSessions()` function from scratch; cannot be patched on top of existing `getSessions()`; ~1 day to implement correctly with caching |
+| Native module bundling error discovered after build | LOW | Add `serverExternalPackages: ['better-sqlite3']` to `next.config.ts`; rebuild |
+| DB stored on NTFS, WAL failures in production | HIGH | Stop server; copy DB to `~/.claude/`; update DB_PATH constant; rebuild; restart |
+| Multiple ingest intervals stacked from hot reload | LOW | Dev-only issue; stop dev server; restart — intervals are cleared on process exit |
+| Wrong dedup key (sessionId field vs filename) | HIGH | Requires schema drop and full re-migration from JSONL; preserve JSONL files — they are the source of truth |
+| Incomplete sessions frozen after merge | MEDIUM | Write a repair script: for each session in DB, compare `message_count` to actual JSONL line count; re-ingest any session where JSONL has more lines than DB row |
+| Unbounded WAL file | LOW | Run `db.pragma('wal_checkpoint(TRUNCATE)')` manually via a `/api/admin/checkpoint` endpoint |
+| DB accidentally committed to git | HIGH | `git rm --cached *.db`; add to `.gitignore`; rotate if conversation history is sensitive |
 
 ---
 
@@ -235,30 +310,32 @@ For the active sessions view, compute duration differently from historical sessi
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Partial line read from active write | Phase: tail-read utility function | Unit test: read a file, append to it mid-read, confirm last-line drop is detected as in-progress, not discarded |
-| mtime threshold too narrow | Phase: status inference algorithm | Manual test: open /active, run a long Claude Code task (file copy, web search), confirm status stays "working" for > 60s |
-| Full JSONL scan on every poll | Phase: `/api/active-sessions` route implementation | Load test: 50 sessions in ~/.claude, open /active page, measure CPU over 30 seconds (target: < 5% steady state) |
-| Concurrent read race condition | Phase: tail-read utility function | Test: open /active while Claude Code is actively writing; confirm no crashes in server logs over 10 minutes |
-| GSD files not found | Phase: GSD progress reader implementation | Test with non-GSD project: verify clean UI, no errors, no ENOENT in server logs |
-| Resumed session duration inflation | Phase: active session duration calculation | Test: resume a session from yesterday; verify displayed duration is < 1 hour (current block), not 18+ hours |
-| SWR polling on wrong hook | Phase: `useActiveSessions()` hook creation | Code review: confirm `useStats`, `useSessions`, `useProjects` do NOT have `refreshInterval` added |
-| Imported data mode interaction | Phase: `/active` page UI | Test: switch to imported data mode; verify /active shows "not available" state, not broken empty state |
+| Native module bundling | Phase 1 (SQLite layer) | Run `next build` and confirm it succeeds before writing any query code |
+| Hot-reload multiple connections | Phase 1 (connection module) | Save a file 10 times rapidly in dev; confirm one DB connection in `global.__db` |
+| DB on NTFS path | Phase 1 (DB path constant) | `ls ~/.claude/` and confirm `.db` and `-wal` files appear there, not in `/mnt/c/` |
+| Background ingest scheduler | Phase 2 (ingest job) | Verify `global.__ingestInterval` exists after first page load; confirm no duplication after reloads |
+| Wrong dedup key | Phase 1 (schema design) | Schema review: confirm PK is filename-derived `session_id` before any data is inserted |
+| Delta sync mtime unreliability | Phase 2 (delta sync) | Manually `touch` a JSONL file without changing content; confirm ingest skips it (size unchanged) |
+| Incomplete merge sessions | Phase 4 (DB merge) | Merge a DB that contains in-progress sessions; continue those sessions; merge again; confirm `message_count` updates |
+| Active sessions reading DB | Phase 3 (API route migration) | Start a new session; confirm it appears on `/active` immediately (not after 30s ingest delay) |
+| Export with open WAL | Phase 4 (export/import) | Export DB; open the exported file in a SQLite viewer on a fresh machine with no `-wal` file present |
 
 ---
 
 ## Sources
 
-- Codebase analysis: `/mnt/c/SourceControl/GitHub/Claud-ometer/src/lib/claude-data/reader.ts` (full file read — existing patterns and gaps)
-- Codebase concerns: `.planning/codebase/CONCERNS.md` (existing tech debt and performance bottlenecks)
-- [Chokidar: file add event fires before write complete (awaitWriteFinish pattern)](https://github.com/paulmillr/chokidar) — HIGH confidence, official docs
-- [fs.watch false positives on Windows/WSL](https://github.com/nodejs/node/issues/6771) — HIGH confidence, official Node.js issue tracker
-- [read-last-lines: efficient tail read via byte position](https://github.com/alexbbt/read-last-lines) — HIGH confidence, npm official
-- [SWR refreshInterval behavior and deduplication](https://swr.vercel.app/docs/revalidation) — HIGH confidence, official Vercel docs
-- [OpenKanban issue: agent status always shows idle due to wrong session ID](https://github.com/TechDufus/openkanban/issues/33) — MEDIUM confidence, analogous real-world case
-- [GSD getMilestoneInfo bug: wrong version from STATE.md vs ROADMAP.md](https://github.com/gsd-build/get-shit-done/issues/853) — MEDIUM confidence, directly relevant
-- [Node.js fs.watch wildly different behavior across scenarios](https://github.com/nodejs/node/issues/47058) — HIGH confidence, official Node.js issue
-- [Implementing tail -f in Node.js: position tracking pattern](https://kodewithkamran.medium.com/implementing-tail-f-in-node-js-edeb412eb587) — MEDIUM confidence, community source
+- [microsoft/WSL issue #4689: \\wsl$ filesystem does not support file locking](https://github.com/microsoft/WSL/issues/4689) — HIGH confidence, official Microsoft tracker
+- [microsoft/WSL issue #2395: SQLite write locks not respected in WSL](https://github.com/microsoft/WSL/issues/2395) — HIGH confidence, official Microsoft tracker
+- [WiseLibs/better-sqlite3 issue #1155: SqliteError database is locked in Next.js + Docker](https://github.com/WiseLibs/better-sqlite3/issues/1155) — HIGH confidence, official issue tracker
+- [Next.js docs: serverExternalPackages configuration](https://nextjs.org/docs/app/api-reference/config/next-config-js/serverExternalPackages) — HIGH confidence, official Next.js docs
+- [Next.js 16.1 release notes: Turbopack transitive serverExternalPackages](https://nextjs.org/blog/next-16-1) — HIGH confidence, official Next.js blog
+- [SQLite docs: Write-Ahead Logging](https://sqlite.org/wal.html) — HIGH confidence, official SQLite documentation
+- [SQLite docs: WAL mode does not work on network filesystem](https://sqlite.org/wal.html) — HIGH confidence, official SQLite documentation
+- [vercel/next.js issue #45483: Fast Refresh causes database connection exhaustion](https://github.com/vercel/next.js/issues/45483) — HIGH confidence, official Next.js issue tracker
+- [SQLite concurrent writes and "database is locked" errors — Ten Thousand Meters](https://tenthousandmeters.com/blog/sqlite-concurrent-writes-and-database-is-locked-errors/) — MEDIUM confidence, verified against SQLite docs
+- [How to access SQLite file in WSL2 — CODEMONDAY](https://medium.com/codemonday/how-to-access-sqlite-file-in-wsl2-dd9dc28ceead) — MEDIUM confidence, community source aligned with official WSL tracker
+- [SQLite performance tuning (busy_timeout, WAL, batch transactions) — phiresky gist](https://gist.github.com/phiresky/978d8e204f77feaa0ab5cca08d2d5b27) — MEDIUM confidence, widely cited community reference
 
 ---
-*Pitfalls research for: Real-time active session monitoring — JSONL filesystem polling on Next.js local dashboard*
-*Researched: 2026-03-18*
+*Pitfalls research for: SQLite persistence + background ingest + DB merge — Next.js App Router on WSL2*
+*Researched: 2026-03-19*
