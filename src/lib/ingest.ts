@@ -256,6 +256,9 @@ export async function runIngestCycle(projectsDir?: string): Promise<void> {
     // Recompute aggregate tables in a separate transaction
     recomputeAggregates(db);
 
+    // Checkpoint WAL to keep .db file up-to-date and WAL small
+    db.pragma('wal_checkpoint(PASSIVE)');
+
     // Update sync status
     state.lastSyncedAt = new Date().toISOString();
     state.lastSessionCount = (
