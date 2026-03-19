@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: History Database
 status: unknown
-stopped_at: "Completed 07-02-PLAN.md — Phase 07 API Migration complete"
-last_updated: "2026-03-19T17:34:29.842Z"
+stopped_at: "Completed 08-01-PLAN.md — DB portability backend and project activity API"
+last_updated: "2026-03-19T19:53:59Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** At a glance, know what every active Claude Code session is doing right now
-**Current focus:** Phase 07 — API Migration
+**Current focus:** Phase 08 — Portability and UI
 
 ## Current Position
 
-Phase: 07 (API Migration) — COMPLETE
-Plan: 2 of 2 (all plans complete)
+Phase: 08 (Portability and UI) — EXECUTING
+Plan: 2 of 2
 
 ## Accumulated Context
 
@@ -48,6 +48,9 @@ Recent decisions affecting current work:
 - [Phase 07-api-migration]: dailyActivity in getDashboardStatsFromDb uses GROUP BY date (not date+project_id) for one entry per calendar date
 - [Phase 07-api-migration]: getSessionDetailFromDb returns DB aggregates with empty messages[] when JSONL missing (null only when session row absent from DB)
 - [Phase 07-02]: getDashboardStats() in reader.ts rewritten for imported mode — full JSONL scan, no stats-cache dependency; StatsCache type and supplemental stats machinery removed
+- [Phase 08-01]: ATTACH DATABASE merge SQL qualifies JOIN with main.sessions to avoid "ambiguous column name" SQLite error
+- [Phase 08-01]: DB replace order: stopIngestScheduler -> close DB -> delete WAL/SHM -> write file -> createDb -> startIngestScheduler
+- [Phase 08-01]: getProjectActivityFromDb is synchronous (better-sqlite3 synchronous API); test dates use Date.now() offsets to survive 30-day window filter
 
 ### Pending Todos
 
@@ -60,6 +63,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T17:25:41Z
-Stopped at: "Completed 07-02-PLAN.md — Phase 07 API Migration complete"
+Last session: 2026-03-19T19:53:59Z
+Stopped at: "Completed 08-01-PLAN.md — DB portability backend and project activity API"
 Resume file: None

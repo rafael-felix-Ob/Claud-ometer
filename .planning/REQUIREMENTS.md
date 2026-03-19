@@ -30,13 +30,13 @@ Requirements for the history database milestone. Each maps to roadmap phases.
 
 ### Portability
 
-- [ ] **PORT-01**: User can export the SQLite database as a standalone .db file download (separate from JSONL ZIP export)
-- [ ] **PORT-02**: User can import a .db file to replace the current database (separate from JSONL ZIP import)
-- [ ] **PORT-03**: User can merge a .db file from another machine with deduplication by session ID
+- [x] **PORT-01**: User can export the SQLite database as a standalone .db file download (separate from JSONL ZIP export)
+- [x] **PORT-02**: User can import a .db file to replace the current database (separate from JSONL ZIP import)
+- [x] **PORT-03**: User can merge a .db file from another machine with deduplication by session ID
 
 ### UI
 
-- [ ] **UI-01**: Project detail page shows an activity chart (similar to overview heatmap)
+- [x] **UI-01**: Project detail page shows an activity chart (similar to overview heatmap)
 - [x] **UI-02**: Sidebar shows sync status indicator (last ingest time, DB health)
 
 ## v2 Requirements
@@ -84,10 +84,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-01 | Phase 7 | Complete |
 | API-02 | Phase 7 | Complete |
 | API-03 | Phase 7 | Complete |
-| PORT-01 | Phase 8 | Pending |
-| PORT-02 | Phase 8 | Pending |
-| PORT-03 | Phase 8 | Pending |
-| UI-01 | Phase 8 | Pending |
+| PORT-01 | Phase 8 | Complete |
+| PORT-02 | Phase 8 | Complete |
+| PORT-03 | Phase 8 | Complete |
+| UI-01 | Phase 8 | Complete |
 | UI-02 | Phase 6 | Complete |
 
 **Coverage:**
