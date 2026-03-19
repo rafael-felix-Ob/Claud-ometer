@@ -34,3 +34,15 @@ export function useActiveSessions() {
     refreshInterval: 5000,
   });
 }
+
+export interface SyncStatus {
+  lastSynced: string | null;
+  sessionCount: number;
+  isRunning: boolean;
+}
+
+export function useSyncStatus() {
+  return useSWR<SyncStatus>('/api/sync-status', fetcher, {
+    refreshInterval: 5000,
+  });
+}
