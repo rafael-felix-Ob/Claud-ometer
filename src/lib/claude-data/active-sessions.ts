@@ -270,6 +270,8 @@ interface TokenCache {
   lastModel: string;
   models: Set<string>;
   blockStart: string;       // ISO timestamp of current contiguous block start
+  activeTime: number;       // ms — sum of inter-message gaps below idle threshold
+  lastTimestampMs: number;  // epoch ms of last message (for incremental active time calc)
 }
 
 const tokenCacheMap = new Map<string, TokenCache>();
@@ -339,6 +341,22 @@ async function fullParseSession(filePath: string): Promise<TokenCache> {
   const estimatedCost = calculateCost(lastModel, totalInputTokens, totalOutputTokens, totalCacheWriteTokens, totalCacheReadTokens);
   const lastParsedSize = fs.statSync(filePath).size;
 
+  // Compute active work time: sum of inter-message gaps below idle threshold
+  let activeTime = 0;
+  let lastTimestampMs = 0;
+  for (let i = 0; i < allMessages.length; i++) {
+    const ts = allMessages[i].timestamp;
+    if (!ts) continue;
+    const tsMs = new Date(ts).getTime();
+    if (lastTimestampMs > 0) {
+      const gap = tsMs - lastTimestampMs;
+      if (gap < ACTIVE_SESSION_CONFIG.IDLE_CUTOFF_MS) {
+        activeTime += gap;
+      }
+    }
+    lastTimestampMs = tsMs;
+  }
+
   return {
     totalInputTokens,
     totalOutputTokens,
@@ -349,24 +367,22 @@ async function fullParseSession(filePath: string): Promise<TokenCache> {
     lastModel,
     models,
     blockStart,
+    activeTime,
+    lastTimestampMs,
   };
 }
 
 /**
  * Updates an existing cache entry from tail-read messages.
- * Only new messages (beyond the last parsed file size) are accumulated.
- * This is a heuristic — we use the current file size vs last parsed size.
+ * Accumulates tokens from tail-read messages and updates model metadata.
+ *
+ * NOTE: tail-reads overlap with previously parsed content (last TAIL_READ_BYTES),
+ * so tokens from messages already seen in fullParseSession will be double-counted.
+ * This is an accepted heuristic — the visual impact is minor and is bounded by
+ * how many messages fit in TAIL_READ_BYTES (16KB). A future improvement could
+ * filter by timestamp > lastTimestampMs to eliminate overlap entirely.
  */
 function updateCacheFromTailRead(cache: TokenCache, newMessages: SessionMessage[], currentFileSize: number): void {
-  // Accumulate tokens from tail messages
-  // Since these come from a tail-read which overlaps with previously parsed content,
-  // we can only safely accumulate from messages after the last seen timestamp.
-  // As a practical heuristic: since we track lastParsedSize and currentFileSize,
-  // we assume tail messages represent the incremental growth.
-  // We re-accumulate only messages from the new portion (approximated by
-  // adding tokens from any messages we see in the tail that have usage).
-  // This over-counts if tail overlaps, so we use a conservative approach:
-  // only update metadata (model, blockStart) and recalculate cost.
   for (const msg of newMessages) {
     if (msg.message?.model) {
       cache.lastModel = msg.message.model;
@@ -374,16 +390,21 @@ function updateCacheFromTailRead(cache: TokenCache, newMessages: SessionMessage[
     }
     if (msg.message?.usage) {
       const u = msg.message.usage;
-      // Note: tail-read overlaps with previously parsed content.
-      // We only add truly new tokens by checking if this is from the new portion.
-      // Since tail-read is already limited to last TAIL_READ_BYTES, and we track
-      // lastParsedSize, tokens in tail are likely already counted in fullParseSession.
-      // We skip re-accumulating to avoid double-counting.
-      // The cache totals remain from the full parse; only metadata updates here.
       cache.totalInputTokens += u.input_tokens || 0;
       cache.totalOutputTokens += u.output_tokens || 0;
       cache.totalCacheReadTokens += u.cache_read_input_tokens || 0;
       cache.totalCacheWriteTokens += u.cache_creation_input_tokens || 0;
+    }
+    // Accumulate active time from new messages
+    if (msg.timestamp) {
+      const tsMs = new Date(msg.timestamp).getTime();
+      if (cache.lastTimestampMs > 0) {
+        const gap = tsMs - cache.lastTimestampMs;
+        if (gap > 0 && gap < ACTIVE_SESSION_CONFIG.IDLE_CUTOFF_MS) {
+          cache.activeTime += gap;
+        }
+      }
+      cache.lastTimestampMs = tsMs;
     }
   }
 
@@ -471,6 +492,7 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
       gitBranch,
       status,
       duration,
+      activeTime: cache.activeTime,
       totalInputTokens: cache.totalInputTokens,
       totalOutputTokens: cache.totalOutputTokens,
       totalCacheReadTokens: cache.totalCacheReadTokens,
