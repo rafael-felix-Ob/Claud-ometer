@@ -192,7 +192,7 @@ export default function ActiveSessionsPage() {
             return (
               <div
                 key={session.id}
-                className="rounded-xl border border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01]"
+                className="rounded-xl border border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01] bg-card"
                 style={{ borderLeftWidth: '4px', borderLeftColor: config.borderColor }}
                 onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
               >
