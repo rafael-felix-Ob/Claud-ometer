@@ -80,7 +80,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DETECT-06 | Phase 1 | Complete |
 | DISP-01 | Phase 2 | Complete |
 | DISP-02 | Phase 2 | Complete |
-| DISP-03 | Phase 2 | Complete |
+| DISP-03 | Phase 2 → Phase 4 | Pending (path display partial) |
 | DISP-04 | Phase 2 | Complete |
 | DISP-05 | Phase 2 | Complete |
 | DISP-06 | Phase 2 | Complete |
@@ -102,4 +102,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-18*
-*Last updated: 2026-03-18 after 02-03 completion (DISP-06, UI-03 marked complete)*
+*Last updated: 2026-03-19 after milestone audit — DISP-03 reassigned to Phase 4 gap closure*
