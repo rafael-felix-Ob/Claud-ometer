@@ -192,11 +192,11 @@ export default function ActiveSessionsPage() {
             return (
               <div
                 key={session.id}
-                className="rounded-xl border border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01] bg-card"
-                style={{ borderLeftWidth: '4px', borderLeftColor: config.borderColor }}
+                className="rounded-xl border border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01]"
+                style={{ borderLeftWidth: '4px', borderLeftColor: config.borderColor, backgroundColor: 'var(--card)' }}
                 onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
               >
-              <Card className="border-0 shadow-none gap-3">
+              <Card className="border-0 shadow-none gap-3 h-full">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 truncate min-w-0 mr-2">
