@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A local-first Claude Code analytics dashboard with real-time active session monitoring. Shows currently running Claude Code sessions with live status (working, waiting, idle), duration, consumed tokens, and GSD build progress — all updating every 5 seconds. Also provides historical analytics: session list with search, project grid, cost analytics, and data import/export.
+A local-first Claude Code analytics dashboard with real-time active session monitoring and persistent SQLite history. Shows currently running Claude Code sessions with live status (working, waiting, idle), duration, consumed tokens, and GSD build progress — all updating every 5 seconds. Historical analytics powered by SQLite: session list with search, project grid with activity charts, cost analytics, and cross-machine portability via .db file export/import/merge.
 
 ## Core Value
 
@@ -10,16 +10,12 @@ At a glance, know what every active Claude Code session is doing right now — n
 
 ## Current State
 
-**Shipped:** v1.0 Active Sessions (2026-03-19)
-**Codebase:** 5,914 LOC TypeScript/TSX
+**Shipped:** v1.1 History Database (2026-03-19)
+**Codebase:** 8,892 LOC TypeScript/TSX across 58 files
 **Tech stack:** Next.js 16, React 19, SWR, Tailwind CSS v4, shadcn/ui, Recharts 3, better-sqlite3
+**Test suite:** 101 tests across 7 suites
 
-v1.0 delivered real-time active session detection and display. All 22 requirements satisfied. 4 phases, 9 plans completed across 23 days.
-
-Phase 5 complete — SQLite foundation with better-sqlite3 singleton, WAL mode, and 5-table schema (DB-01 through DB-05 validated).
-Phase 6 complete — Delta ingest with 2-minute scheduler, two-factor delta check, sidebar sync status (ING-01 through ING-04, UI-02 validated).
-Phase 7 complete — All historical API routes read from SQLite, stats-cache.json retired, 6 typed DB query functions (API-01 through API-03 validated).
-Phase 8 complete — DB export/import/merge on /data page, project activity chart, ZIP→SQLite bridge (PORT-01 through PORT-03, UI-01 validated).
+v1.0 delivered real-time active session detection and display. v1.1 added SQLite persistence layer with background ingest, API migration from JSONL to DB, and cross-machine portability.
 
 ## Requirements
 
@@ -41,27 +37,17 @@ Phase 8 complete — DB export/import/merge on /data page, project activity char
 - ✓ Sidebar navigation entry with Activity icon — v1.0
 - ✓ 5-second auto-refresh polling — v1.0
 - ✓ Project path display on active session cards — v1.0
-
-## Current Milestone: v1.1 History Database
-
-**Goal:** Persist parsed session data into a local SQLite database for faster queries, historical trends, and cross-machine portability.
-
-**Target features:**
-- SQLite local database as persistence layer for all historical session data
-- Periodic background ingest job syncing JSONL → SQLite (delta only, new/modified files)
-- All pages read from database except active sessions (still live JSONL)
-- Activity chart on project detail page (similar to overview heatmap)
-- Export/import .db file for cross-machine portability
-- Merge databases from different machines (dedup by session ID)
-
-### Active
-
-- [x] SQLite database schema and persistence layer — Phase 5
-- [x] Periodic background JSONL → SQLite ingest (delta sync) — Phase 6
-- [x] Migrate all API routes to read from database instead of JSONL — Phase 7
-- [x] Activity chart on project detail page — Phase 8
-- [x] Export/import database file — Phase 8
-- [x] Merge databases from different machines with deduplication — Phase 8
+- ✓ SQLite database with WAL mode, auto-apply schema, globalThis singleton — v1.1
+- ✓ Periodic background ingest (2-min cycle, two-factor delta check, idempotent) — v1.1
+- ✓ Sidebar sync status indicator (last ingest time, session count) — v1.1
+- ✓ All historical API routes read from SQLite (live mode) with JSONL fallback (imported mode) — v1.1
+- ✓ Active sessions page stays on live JSONL — v1.1
+- ✓ Session detail hybrid: DB aggregates + JSONL messages — v1.1
+- ✓ Export .db file for cross-machine portability — v1.1
+- ✓ Import/replace .db file — v1.1
+- ✓ Merge .db files with session deduplication by message count — v1.1
+- ✓ Project detail activity bar chart (last 30 days) — v1.1
+- ✓ ZIP import → SQLite bridge option — v1.1
 
 ### Out of Scope
 
@@ -69,6 +55,9 @@ Phase 8 complete — DB export/import/merge on /data page, project activity char
 - WebSocket/SSE push updates — polling at 5s is simple and adequate
 - Notification system for session state changes — view-only for now
 - Active session history/timeline — just current state
+- Cloud database (Supabase/Postgres) — local-first philosophy; SQLite is zero-config and portable
+- Database encryption — local-first tool; filesystem permissions are sufficient
+- Automatic cloud sync between machines — user-controlled export/merge is simpler
 
 ## Key Decisions
 
@@ -82,16 +71,18 @@ Phase 8 complete — DB export/import/merge on /data page, project activity char
 | SQLite over cloud database | Local-first philosophy, zero config, portable .db file | ✓ Good |
 | better-sqlite3 over Drizzle/Prisma | Synchronous API, on Next.js serverExternalPackages allowlist, no webpack config | ✓ Good |
 | globalThis singleton for DB connection | Prevents hot-reload duplication in Next.js dev mode | ✓ Good |
-| Background ingest over on-demand parsing | Pages load instantly from DB; active sessions stay real-time from JSONL | ✓ Good |
 | globalThis for ingest state | Module isolation in Next.js requires shared state on globalThis, not module vars | ✓ Good |
-| DB merge over cloud sync | No accounts/auth needed; user controls when to merge | — Pending |
+| Background ingest over on-demand parsing | Pages load instantly from DB; active sessions stay real-time from JSONL | ✓ Good |
+| DB merge over cloud sync | No accounts/auth needed; user controls when to merge | ✓ Good |
+| ATTACH DATABASE for merge | Native SQLite cross-database queries, no temp tables needed | ✓ Good |
+| Two-path data access | Live mode uses SQLite, imported mode uses JSONL — clean separation | ✓ Good |
 
 ## Constraints
 
-- **Tech stack**: Next.js 16, React 19, SWR, Tailwind CSS v4, shadcn/ui, Recharts 3
+- **Tech stack**: Next.js 16, React 19, SWR, Tailwind CSS v4, shadcn/ui, Recharts 3, better-sqlite3
 - **Local-first**: No external dependencies or cloud services — SQLite + filesystem only
 - **Performance**: 5-second polling must not degrade dashboard; tail-read JSONL, not full re-parse
 - **Compatibility**: Works alongside data source toggle (live vs imported)
 
 ---
-*Last updated: 2026-03-19 after Phase 8 completion — v1.1 milestone complete*
+*Last updated: 2026-03-19 after v1.1 milestone completion*

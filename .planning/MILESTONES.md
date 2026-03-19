@@ -1,5 +1,15 @@
 # Milestones
 
+## v1.1 History Database (Shipped: 2026-03-19)
+
+**Phases completed:** 4 phases, 7 plans, 0 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
+
 ## v1.0 Active Sessions (Shipped: 2026-03-19)
 
 **Phases completed:** 4 phases, 9 plans
