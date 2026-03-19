@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: History Database
 status: executing
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-03-19T17:16:35Z"
+stopped_at: "Checkpoint: 07-02 Task 1 complete, awaiting human-verify Task 2"
+last_updated: "2026-03-19T18:00:00Z"
 progress:
   total_phases: 4
   completed_phases: 2
@@ -47,6 +47,7 @@ Recent decisions affecting current work:
 - [Phase 07-api-migration]: getProjectsFromDb() reads sessions.model (raw IDs) and applies getModelDisplayName() — projects.models column is always '[]' from ingest
 - [Phase 07-api-migration]: dailyActivity in getDashboardStatsFromDb uses GROUP BY date (not date+project_id) for one entry per calendar date
 - [Phase 07-api-migration]: getSessionDetailFromDb returns DB aggregates with empty messages[] when JSONL missing (null only when session row absent from DB)
+- [Phase 07-02]: getDashboardStats() in reader.ts rewritten for imported mode — full JSONL scan, no stats-cache dependency; StatsCache type and supplemental stats machinery removed
 
 ### Pending Todos
 
@@ -59,6 +60,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T17:16:35Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-03-19T18:00:00Z
+Stopped at: "Checkpoint: 07-02 Task 1 complete, awaiting human-verify Task 2"
 Resume file: None
