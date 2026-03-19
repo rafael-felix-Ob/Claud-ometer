@@ -9,8 +9,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import { createDb } from '@/lib/db';
-import { runIngestCycle, startIngestScheduler, getSyncStatus } from '@/lib/ingest';
-import type Database from 'better-sqlite3';
+import { runIngestCycle, startIngestScheduler, getSyncStatus, _resetSyncStateForTesting } from '@/lib/ingest';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -70,8 +69,9 @@ beforeEach(() => {
   db = createDb(tmpDbPath);
   // Override the global singleton so ingest.ts uses our test DB
   globalThis.__claudeometerDb = db;
-  // Reset ingest timer guard
+  // Reset ingest timer guard and module-level sync state
   globalThis.__claudeometerIngestTimer = undefined;
+  _resetSyncStateForTesting();
 });
 
 afterEach(() => {
