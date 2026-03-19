@@ -58,6 +58,12 @@ Recent decisions affecting current work:
 
 None yet.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260319-vv7 | Add first-sync empty state UI | 2026-03-19 | 4656c9d | [260319-vv7-add-first-sync-empty-state-ui-sidebar-sh](./quick/260319-vv7-add-first-sync-empty-state-ui-sidebar-sh/) |
+
 ### Blockers/Concerns
 
 - [Phase 5 RESOLVED]: daily_activity table includes project_id as part of composite PK — confirmed correct for Phase 8 activity chart
