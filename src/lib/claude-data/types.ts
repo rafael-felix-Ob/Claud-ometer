@@ -181,6 +181,7 @@ export interface ActiveSessionInfo {
   model: string;              // last used model
   models: string[];           // all models used in session
   lastActivity: string;       // ISO timestamp — file mtime
+  hasRunningProcess: boolean;  // true if lsof detects an open file descriptor for this session's JSONL
   gsdProgress?: GsdProgress | null;
 }
 

@@ -15,9 +15,17 @@ import {
   tailReadJsonl,
   ACTIVE_SESSION_CONFIG,
   getActiveSessions,
+  detectOpenJsonlFiles,
 } from '@/lib/claude-data/active-sessions';
 
 import { SessionMessage } from '@/lib/claude-data/types';
+
+// Mock child_process for lsof-based process detection
+jest.mock('child_process', () => ({
+  execSync: jest.fn(() => ''),
+}));
+
+import { execSync } from 'child_process';
 
 jest.mock('@/lib/claude-data/reader', () => ({
   getProjectsDir: jest.fn(() => '/tmp/mock-claude-projects'),
@@ -487,5 +495,142 @@ describe('getActiveSessions', () => {
     expect(result[0].projectPath).toBe(`/home/user/${projectId}`);
     expect(result[0].cwd).toBe('/home/user/project');
     expect(result[0].gitBranch).toBe('feature/test');
+  });
+
+  test('sets hasRunningProcess=true when lsof reports file open', async () => {
+    const projectId = 'process-project';
+    const projectDir = path.join(orchestratorTmpDir, projectId);
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    const sessionId = 'session-process';
+    const filePath = path.join(projectDir, `${sessionId}.jsonl`);
+
+    const msg = makeMessage({
+      type: 'assistant',
+      uuid: 'a1',
+      message: { role: 'assistant', content: 'Hello', model: 'claude-sonnet-4-6' },
+    });
+    fs.writeFileSync(filePath, JSON.stringify(msg) + '\n');
+
+    const recentMtime = new Date(Date.now() - 5000);
+    fs.utimesSync(filePath, recentMtime, recentMtime);
+
+    // Mock lsof returning this file as open
+    (execSync as jest.Mock).mockReturnValue(
+      `COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME\nnode    12345 user    5w   REG    8,1    16384 1234567 ${filePath}\n`
+    );
+
+    const result = await getActiveSessions();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].hasRunningProcess).toBe(true);
+  });
+
+  test('sets hasRunningProcess=false when lsof does NOT report file open', async () => {
+    const projectId = 'no-process-project';
+    const projectDir = path.join(orchestratorTmpDir, projectId);
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    const sessionId = 'session-no-process';
+    const filePath = path.join(projectDir, `${sessionId}.jsonl`);
+
+    const msg = makeMessage({
+      type: 'assistant',
+      uuid: 'a1',
+      message: { role: 'assistant', content: 'Hello', model: 'claude-sonnet-4-6' },
+    });
+    fs.writeFileSync(filePath, JSON.stringify(msg) + '\n');
+
+    const recentMtime = new Date(Date.now() - 5000);
+    fs.utimesSync(filePath, recentMtime, recentMtime);
+
+    // Mock lsof returning a DIFFERENT file (not this session)
+    (execSync as jest.Mock).mockReturnValue(
+      `COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME\nnode    12345 user    5w   REG    8,1    16384 1234567 /some/other/file.jsonl\n`
+    );
+
+    const result = await getActiveSessions();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].hasRunningProcess).toBe(false);
+  });
+
+  test('sets hasRunningProcess=true for all sessions when lsof fails (graceful fallback)', async () => {
+    const projectId = 'fallback-project';
+    const projectDir = path.join(orchestratorTmpDir, projectId);
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    const sessionId = 'session-fallback';
+    const filePath = path.join(projectDir, `${sessionId}.jsonl`);
+
+    const msg = makeMessage({
+      type: 'assistant',
+      uuid: 'a1',
+      message: { role: 'assistant', content: 'Hello', model: 'claude-sonnet-4-6' },
+    });
+    fs.writeFileSync(filePath, JSON.stringify(msg) + '\n');
+
+    const recentMtime = new Date(Date.now() - 5000);
+    fs.utimesSync(filePath, recentMtime, recentMtime);
+
+    // Mock lsof throwing (command not found / unavailable)
+    (execSync as jest.Mock).mockImplementation(() => { throw new Error('lsof: command not found'); });
+
+    const result = await getActiveSessions();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].hasRunningProcess).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// detectOpenJsonlFiles — unit tests
+// ---------------------------------------------------------------------------
+
+describe('detectOpenJsonlFiles', () => {
+  test('returns Set of absolute .jsonl file paths from lsof output', () => {
+    const mockOutput = [
+      'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME',
+      'node    12345 user    5w   REG    8,1    16384 1234567 /home/user/.claude/projects/proj1/session1.jsonl',
+      'node    12345 user    6w   REG    8,1     8192 1234568 /home/user/.claude/projects/proj2/session2.jsonl',
+      'node    67890 user    3r   REG    8,1      512 1234569 /home/user/.claude/projects/proj1/some-other.txt',
+    ].join('\n');
+
+    (execSync as jest.Mock).mockReturnValue(mockOutput);
+
+    const { openFiles, lsofWorked } = detectOpenJsonlFiles('/home/user/.claude/projects');
+
+    expect(openFiles).toBeInstanceOf(Set);
+    expect(openFiles.size).toBe(2);
+    expect(openFiles.has('/home/user/.claude/projects/proj1/session1.jsonl')).toBe(true);
+    expect(openFiles.has('/home/user/.claude/projects/proj2/session2.jsonl')).toBe(true);
+    // Non-jsonl file should NOT be in the set
+    expect(openFiles.has('/home/user/.claude/projects/proj1/some-other.txt')).toBe(false);
+    expect(lsofWorked).toBe(true);
+  });
+
+  test('returns empty Set when lsof command fails', () => {
+    (execSync as jest.Mock).mockImplementation(() => { throw new Error('lsof: command not found'); });
+
+    const { openFiles, lsofWorked } = detectOpenJsonlFiles('/home/user/.claude/projects');
+
+    expect(openFiles).toBeInstanceOf(Set);
+    expect(openFiles.size).toBe(0);
+    expect(lsofWorked).toBe(false);
+  });
+
+  test('returns empty Set when lsof returns no matching files', () => {
+    const mockOutput = [
+      'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME',
+      'node    12345 user    3r   REG    8,1      512 1234569 /home/user/.claude/projects/proj1/config.json',
+    ].join('\n');
+
+    (execSync as jest.Mock).mockReturnValue(mockOutput);
+
+    const { openFiles, lsofWorked } = detectOpenJsonlFiles('/home/user/.claude/projects');
+
+    expect(openFiles).toBeInstanceOf(Set);
+    expect(openFiles.size).toBe(0);
+    expect(lsofWorked).toBe(true);
   });
 });
