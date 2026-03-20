@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatTokens, formatCost, formatDuration, timeAgo } from '@/lib/format';
 import { getModelDisplayName, getModelColor } from '@/config/pricing';
-import { Activity, GitBranch, Zap, AlertTriangle, Layers, ExternalLink, Timer } from 'lucide-react';
+import { Activity, GitBranch, Zap, AlertTriangle, Layers, ExternalLink, Timer, ChevronDown, ChevronUp } from 'lucide-react';
 import type { ActiveSessionInfo } from '@/lib/claude-data/types';
 
 const STATUS_ORDER: Record<string, number> = { working: 0, waiting: 1, idle: 2 };
@@ -98,6 +98,111 @@ function ExpandedCardDetail({ sessionId }: { sessionId: string }) {
   );
 }
 
+function SessionCard({ session, expandedId, setExpandedId }: {
+  session: ActiveSessionInfo;
+  expandedId: string | null;
+  setExpandedId: (id: string | null) => void;
+}) {
+  const config = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.idle;
+  const totalTokens = computeTotalTokens(session);
+  return (
+    <div
+      key={session.id}
+      className="rounded-xl border border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01]"
+      style={{ borderLeftWidth: '4px', borderLeftColor: config.borderColor, backgroundColor: 'var(--card)' }}
+      onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
+    >
+    <Card className="border-0 shadow-none gap-3 h-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 truncate min-w-0 mr-2">
+            <span className="text-sm font-semibold truncate">{session.projectName}</span>
+            {session.gsdProgress?.isGsd && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 font-mono">
+                GSD
+              </Badge>
+            )}
+          </div>
+          <Badge variant="secondary" className={`text-xs shrink-0 ${config.badge}`}>
+            <span className={`inline-block h-2 w-2 rounded-full mr-1.5 ${config.dot}`} />
+            {config.label}
+          </Badge>
+        </div>
+        {session.cwd && (
+          <p className="text-xs text-muted-foreground font-mono truncate max-w-[200px]" title={session.cwd}>
+            {session.cwd}
+          </p>
+        )}
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xl font-semibold">{formatDuration(session.duration)}</span>
+            {(session.activeTime || 0) > 0 && (
+              <span className="ml-2 text-xs text-muted-foreground" title="Active work time (excludes idle)">
+                <Timer className="h-3 w-3 inline mr-0.5 -mt-px" />
+                {formatDuration(session.activeTime)}
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">Active {timeAgo(session.lastActivity)}</span>
+        </div>
+      </CardHeader>
+      <CardContent className={`pt-0 space-y-2 ${session.status === 'idle' ? 'opacity-75' : ''}`}>
+        {/* Tokens + cost */}
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Zap className="h-3 w-3" />
+          <span>{formatTokens(totalTokens)} tokens &bull; {formatCost(session.estimatedCost)}</span>
+        </div>
+        {/* Model badge */}
+        <div>
+          <Badge variant="secondary" className="text-xs">
+            <span style={{ color: getModelColor(session.model) }}>
+              {getModelDisplayName(session.model)}
+            </span>
+          </Badge>
+        </div>
+        {/* Git branch */}
+        {session.gitBranch && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <GitBranch className="h-3 w-3" />
+            <span className="font-mono truncate max-w-[160px]">{session.gitBranch}</span>
+          </div>
+        )}
+      </CardContent>
+      {session.gsdProgress?.isGsd && session.gsdProgress.phaseName && (
+        <CardContent className="pt-0">
+          <Separator className="mb-2" />
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <div className="flex items-start justify-between gap-2">
+              <span className="truncate">
+                Phase {session.gsdProgress.phaseNumber}: {session.gsdProgress.phaseName}
+              </span>
+              {session.gsdProgress.percent !== null && (
+                <span className="shrink-0 font-mono text-[10px]">{session.gsdProgress.percent}%</span>
+              )}
+            </div>
+            {session.gsdProgress.phaseStatus && (
+              <div className="text-[10px] text-muted-foreground/70 truncate">
+                {session.gsdProgress.phaseStatus}
+              </div>
+            )}
+            {session.gsdProgress.nextAction && (
+              <div className="font-mono text-[10px] text-primary/70 truncate">
+                {session.gsdProgress.nextAction}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      )}
+      {expandedId === session.id && (
+        <CardContent className="pt-0">
+          <ExpandedCardDetail sessionId={session.id} />
+        </CardContent>
+      )}
+    </Card>
+    </div>
+  );
+}
+
 export default function ActiveSessionsPage() {
   const { data: sessions, isLoading, error } = useActiveSessions();
   const { data: sourceInfo } = useSWR('/api/data-source', dataSourceFetcher, { refreshInterval: 5000 });
@@ -105,6 +210,7 @@ export default function ActiveSessionsPage() {
 
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showRecent, setShowRecent] = useState<boolean>(false);
 
   useEffect(() => {
     if (sessions !== undefined) {
@@ -116,7 +222,12 @@ export default function ActiveSessionsPage() {
     (a, b) => (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3)
   );
 
-  const activeNowCount = sorted.filter(s => s.status === 'working' || s.status === 'waiting').length;
+  // Partition into active (has running process) vs recently active (no running process)
+  const activeSessions = sorted.filter(s => s.hasRunningProcess !== false);
+  const recentSessions = sorted.filter(s => s.hasRunningProcess === false);
+
+  // Active Now count: only process-backed sessions with working/waiting status
+  const activeNowCount = activeSessions.filter(s => s.status === 'working' || s.status === 'waiting').length;
   const totalCount = sorted.length;
   const totalTokensSum = sorted.reduce((sum, s) => sum + computeTotalTokens(s), 0);
 
@@ -171,7 +282,7 @@ export default function ActiveSessionsPage() {
         <StatCard title="Tokens (Recent)" value={formatTokens(totalTokensSum)} icon={Zap} />
       </div>
 
-      {/* Empty state OR card grid */}
+      {/* Empty state when BOTH groups are empty */}
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Activity className="h-10 w-10 text-muted-foreground/30 mb-4" />
@@ -185,107 +296,60 @@ export default function ActiveSessionsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {sorted.map((session) => {
-            const config = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.idle;
-            const totalTokens = computeTotalTokens(session);
-            return (
+        <div className="space-y-6">
+          {/* Active section — sessions with running processes */}
+          {activeSessions.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {activeSessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  expandedId={expandedId}
+                  setExpandedId={setExpandedId}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No sessions with running Claude Code processes
+            </p>
+          )}
+
+          {/* Recently Active section — collapsed by default */}
+          {recentSessions.length > 0 && (
+            <div>
               <div
-                key={session.id}
-                className="rounded-xl border border-border/50 shadow-sm cursor-pointer transition-all duration-150 hover:shadow-md hover:scale-[1.01]"
-                style={{ borderLeftWidth: '4px', borderLeftColor: config.borderColor, backgroundColor: 'var(--card)' }}
-                onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => setShowRecent(!showRecent)}
               >
-              <Card className="border-0 shadow-none gap-3 h-full">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 truncate min-w-0 mr-2">
-                      <span className="text-sm font-semibold truncate">{session.projectName}</span>
-                      {session.gsdProgress?.isGsd && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 font-mono">
-                          GSD
-                        </Badge>
-                      )}
-                    </div>
-                    <Badge variant="secondary" className={`text-xs shrink-0 ${config.badge}`}>
-                      <span className={`inline-block h-2 w-2 rounded-full mr-1.5 ${config.dot}`} />
-                      {config.label}
-                    </Badge>
-                  </div>
-                  {session.cwd && (
-                    <p className="text-xs text-muted-foreground font-mono truncate max-w-[200px]" title={session.cwd}>
-                      {session.cwd}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xl font-semibold">{formatDuration(session.duration)}</span>
-                      {(session.activeTime || 0) > 0 && (
-                        <span className="ml-2 text-xs text-muted-foreground" title="Active work time (excludes idle)">
-                          <Timer className="h-3 w-3 inline mr-0.5 -mt-px" />
-                          {formatDuration(session.activeTime)}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground">Active {timeAgo(session.lastActivity)}</span>
-                  </div>
-                </CardHeader>
-                <CardContent className={`pt-0 space-y-2 ${session.status === 'idle' ? 'opacity-75' : ''}`}>
-                  {/* Tokens + cost */}
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Zap className="h-3 w-3" />
-                    <span>{formatTokens(totalTokens)} tokens &bull; {formatCost(session.estimatedCost)}</span>
-                  </div>
-                  {/* Model badge */}
-                  <div>
-                    <Badge variant="secondary" className="text-xs">
-                      <span style={{ color: getModelColor(session.model) }}>
-                        {getModelDisplayName(session.model)}
-                      </span>
-                    </Badge>
-                  </div>
-                  {/* Git branch */}
-                  {session.gitBranch && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <GitBranch className="h-3 w-3" />
-                      <span className="font-mono truncate max-w-[160px]">{session.gitBranch}</span>
-                    </div>
-                  )}
-                </CardContent>
-                {session.gsdProgress?.isGsd && session.gsdProgress.phaseName && (
-                  <CardContent className="pt-0">
-                    <Separator className="mb-2" />
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="truncate">
-                          Phase {session.gsdProgress.phaseNumber}: {session.gsdProgress.phaseName}
-                        </span>
-                        {session.gsdProgress.percent !== null && (
-                          <span className="shrink-0 font-mono text-[10px]">{session.gsdProgress.percent}%</span>
-                        )}
-                      </div>
-                      {session.gsdProgress.phaseStatus && (
-                        <div className="text-[10px] text-muted-foreground/70 truncate">
-                          {session.gsdProgress.phaseStatus}
-                        </div>
-                      )}
-                      {session.gsdProgress.nextAction && (
-                        <div className="font-mono text-[10px] text-primary/70 truncate">
-                          {session.gsdProgress.nextAction}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Recently Active ({recentSessions.length})
+                </span>
+                {showRecent ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 )}
-                {expandedId === session.id && (
-                  <CardContent className="pt-0">
-                    <ExpandedCardDetail sessionId={session.id} />
-                  </CardContent>
-                )}
-              </Card>
               </div>
-            );
-          })}
+              <p className="text-xs text-muted-foreground/70 mt-0.5">
+                Sessions modified in the last 30 minutes with no running Claude Code process
+              </p>
+              {showRecent && (
+                <div className="opacity-60 mt-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    {recentSessions.map((session) => (
+                      <SessionCard
+                        key={session.id}
+                        session={session}
+                        expandedId={expandedId}
+                        setExpandedId={setExpandedId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
