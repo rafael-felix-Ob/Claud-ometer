@@ -16,6 +16,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
+import { execSync } from 'child_process';
 
 import { getProjectsDir, extractCwdFromSession, projectIdToName, projectIdToFullPath } from './reader';
 import { calculateCost } from '@/config/pricing';
@@ -257,6 +258,48 @@ export function scanActiveFiles(): ActiveFileEntry[] {
 }
 
 // ---------------------------------------------------------------------------
+// detectOpenJsonlFiles — lsof-based process detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Uses `lsof` to detect which JSONL files under `projectsDir` have an open
+ * file descriptor (i.e., a running Claude Code process is writing to them).
+ *
+ * Returns a Set of absolute file paths ending in `.jsonl`.
+ * On ANY error (command not found, timeout, non-zero exit): returns empty Set
+ * along with lsofWorked=false for graceful degradation.
+ */
+export function detectOpenJsonlFiles(projectsDir: string): { openFiles: Set<string>; lsofWorked: boolean } {
+  try {
+    const output = execSync(`lsof +D ${projectsDir} 2>/dev/null`, {
+      encoding: 'utf8',
+      timeout: 3000,
+    });
+
+    const openFiles = new Set<string>();
+    const lines = output.split('\n');
+    for (const line of lines) {
+      // lsof output: columns separated by whitespace, last column is the file path
+      // Skip the header line
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('COMMAND')) continue;
+
+      // The NAME column is the last space-separated field
+      const parts = trimmed.split(/\s+/);
+      const filePath = parts[parts.length - 1];
+      if (filePath && filePath.endsWith('.jsonl')) {
+        openFiles.add(filePath);
+      }
+    }
+
+    return { openFiles, lsofWorked: true };
+  } catch {
+    // lsof unavailable, timed out, or errored — graceful degradation
+    return { openFiles: new Set<string>(), lsofWorked: false };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Token cache — per-session accumulation across 5-second polls
 // ---------------------------------------------------------------------------
 
@@ -435,6 +478,10 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
   const activeFiles = scanActiveFiles();
   const currentSessionIds = new Set(activeFiles.map(f => f.sessionId));
 
+  // Detect which JSONL files have a running process (via lsof)
+  const projectsDir = getProjectsDir();
+  const { openFiles, lsofWorked } = detectOpenJsonlFiles(projectsDir);
+
   // Evict stale cache entries — sessions no longer in active window
   for (const cachedId of tokenCacheMap.keys()) {
     if (!currentSessionIds.has(cachedId)) {
@@ -483,6 +530,10 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
     // 5. Compute duration from cached block start
     const duration = Date.now() - new Date(cache.blockStart).getTime();
 
+    // 6. Determine if a running process has this file open
+    // If lsof is unavailable, assume all sessions are active (graceful fallback)
+    const hasRunningProcess = lsofWorked ? openFiles.has(filePath) : true;
+
     results.push({
       id: sessionId,
       projectId,
@@ -501,6 +552,7 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
       model: cache.lastModel,
       models: Array.from(cache.models),
       lastActivity: new Date(mtimeMs).toISOString(),
+      hasRunningProcess,
       gsdProgress,
     });
   }
