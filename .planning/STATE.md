@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed quick task 260319-vv7 (first-sync empty state UI)
-last_updated: "2026-03-19T23:04:50.144Z"
+stopped_at: Completed quick task 260320-els (improve active session detection)
+last_updated: "2026-03-20T10:42:38Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -63,6 +63,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260319-vv7 | Add first-sync empty state UI | 2026-03-19 | 4656c9d | [260319-vv7-add-first-sync-empty-state-ui-sidebar-sh](./quick/260319-vv7-add-first-sync-empty-state-ui-sidebar-sh/) |
+| 260320-els | Improve active session detection to filter stale sessions | 2026-03-20 | 2d9fb83 | [260320-els-improve-active-session-detection-to-filt](./quick/260320-els-improve-active-session-detection-to-filt/) |
 
 ### Blockers/Concerns
 
@@ -71,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T23:04:50.116Z
-Stopped at: Completed quick task 260319-vv7 (first-sync empty state UI)
+Last session: 2026-03-20T10:42:38Z
+Stopped at: Completed quick task 260320-els (improve active session detection)
 Resume file: None
